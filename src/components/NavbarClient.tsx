@@ -70,9 +70,6 @@ export function NavbarClient({ session }: NavbarClientProps) {
                                     <Link href="/admin/blogs" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
                                         <FileText className="w-4 h-4" /> Blogs
                                     </Link>
-                                    <Link href="/admin/blogs" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
-                                        <FileText className="w-4 h-4" /> Blogs
-                                    </Link>
                                     <Link href="/admin/khidmat" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
                                         <FileText className="w-4 h-4" /> Khidmat Requests
                                     </Link>
