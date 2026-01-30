@@ -12,7 +12,7 @@ export function Footer() {
                     <div className="flex items-center gap-3">
                         <img src="/logo-no-bg.png" alt="SEZ Logo" className="h-16 w-auto brightness-0 invert drop-shadow-lg" />
                         <div>
-                            <h3 className="text-2xl font-serif font-bold text-gold">Shabab Ul<br />Eidiz Zahabi</h3>
+                            <h3 className="text-3xl font-[family-name:var(--font-lobster)] font-bold text-gold tracking-wide">Shabab Ul<br />Eidiz Zahabi</h3>
                         </div>
                     </div>
                     <p className="text-cream/80 leading-relaxed max-w-sm text-lg">
@@ -21,7 +21,7 @@ export function Footer() {
                 </div>
 
                 <div>
-                    <h4 className="text-gold font-bold font-serif text-xl mb-8 uppercase tracking-widest">Navigation</h4>
+                    <h4 className="text-gold font-bold font-[family-name:var(--font-lobster)] text-2xl mb-8 tracking-wide">Navigation</h4>
                     <ul className="space-y-4 text-base">
                         <li><Link href="/" className="hover:text-gold transition-colors flex items-center gap-2"><span className="text-gold">›</span> Home</Link></li>
                         <li><Link href="/events" className="hover:text-gold transition-colors flex items-center gap-2"><span className="text-gold">›</span> Calendar</Link></li>
@@ -32,7 +32,7 @@ export function Footer() {
                 </div>
 
                 <div>
-                    <h4 className="text-gold font-bold font-serif text-xl mb-8 uppercase tracking-widest">Connect</h4>
+                    <h4 className="text-gold font-bold font-[family-name:var(--font-lobster)] text-2xl mb-8 tracking-wide">Connect</h4>
                     <p className="text-cream/80 mb-4">Burhani Housing Society,<br />Trimulgherry, Secunderabad.</p>
                     <div className="space-y-2">
                         <a href="mailto:sezsecbad@gmail.com" className="hover:text-gold transition-colors block text-lg font-medium">

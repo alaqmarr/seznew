@@ -41,58 +41,70 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-primary-dark/95 relative px-4 overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-black">
             {/* Background Pattern */}
-            <div className="absolute inset-0 bg-[url('/bg.svg')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+            <div className="absolute inset-0 z-0 opacity-[0.05]"
+                style={{
+                    backgroundImage: `url("https://www.transparenttextures.com/patterns/arabesque.png")`,
+                    backgroundSize: '300px'
+                }}
+            />
 
-            <Toaster />
+            <div className="absolute inset-0 bg-black/20 z-0 pointer-events-none" />
 
-            <div className="w-full max-w-md relative z-10">
-                <OrnateCard className="bg-cream/95 backdrop-blur-xl border-gold/30">
+            <Toaster position="top-center" />
+
+            <div className="w-full max-w-md relative z-10 px-4">
+                <OrnateCard className="bg-black/30 backdrop-blur-xl border-gold/20 shadow-2xl p-8 md:p-10">
                     <div className="text-center mb-8">
                         <OrnateHeading
-                            title="Sign In"
-                            subtitle="Admin Portal Access"
+                            title="Admin Portal"
+                            subtitle="Sign in to manage the application"
+                            isDarkBg={true}
                         />
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2 text-left">
-                            <label className="text-sm font-bold text-primary-dark uppercase tracking-wider block">Username</label>
+                            <label className="text-xs font-bold text-gold uppercase tracking-widest pl-1">Username</label>
                             <Input
                                 type="text"
                                 placeholder="Enter username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="bg-white border-gold/30 focus-visible:ring-gold/50 h-12 text-base text-neutral-900"
+                                className="bg-white/5 border-gold/20 focus-visible:ring-gold/50 h-12 text-base text-cream placeholder:text-white/20 rounded-lg"
                                 required
                             />
                         </div>
                         <div className="space-y-2 text-left">
-                            <label className="text-sm font-bold text-primary-dark uppercase tracking-wider block">Password</label>
+                            <label className="text-xs font-bold text-gold uppercase tracking-widest pl-1">Password</label>
                             <Input
                                 type="password"
                                 placeholder="Enter password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="bg-white border-gold/30 focus-visible:ring-gold/50 h-12 text-base text-neutral-900"
+                                className="bg-white/5 border-gold/20 focus-visible:ring-gold/50 h-12 text-base text-cream placeholder:text-white/20 rounded-lg"
                                 required
                             />
                         </div>
 
-                        <div className="pt-4">
-                            <GoldenButton className="w-full justify-center text-lg h-12" disabled={loading}>
+                        <div className="pt-6">
+                            <GoldenButton className="w-full justify-center text-lg h-14 shadow-xl shadow-gold/10" disabled={loading}>
                                 {loading ? "Signing in..." : "Sign In"}
                             </GoldenButton>
                         </div>
 
-                        <div className="text-center text-sm text-neutral-600 mt-6 font-medium">
-                            <Link href="/" className="hover:text-gold transition-colors flex items-center justify-center gap-2">
+                        <div className="text-center mt-6">
+                            <Link href="/" className="text-sm font-medium text-cream/60 hover:text-gold transition-colors flex items-center justify-center gap-2">
                                 ← Back to Home
                             </Link>
                         </div>
                     </form>
                 </OrnateCard>
+
+                <p className="text-center text-white/20 text-xs mt-8 font-mono">
+                    Protected System • Shabab Ul Eidiz Zahabi
+                </p>
             </div>
         </div>
     );

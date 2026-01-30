@@ -71,12 +71,12 @@ export function OrnateHeading({
                 </p>
             )}
             <h1 className={cn(
-                "text-4xl md:text-5xl font-serif font-bold tracking-tight",
-                isDarkBg ? "text-gold" : "text-primary-dark"
+                "text-5xl md:text-6xl font-[family-name:var(--font-lobster)] font-bold tracking-wide drop-shadow-lg py-2",
+                isDarkBg ? "text-gold" : "text-primary"
             )}>
                 {title}
             </h1>
-            <div className="mx-auto w-24 h-1 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full" />
+            <div className="mx-auto w-32 h-1.5 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full" />
             {subtitle && (
                 <p className={cn(
                     "text-lg font-medium max-w-2xl mx-auto leading-relaxed",

@@ -26,7 +26,7 @@ export function NavbarClient({ session }: NavbarClientProps) {
 
     return (
         <header className="sticky top-0 z-50 w-full shadow-lg">
-            <nav className="bg-primary/95 backdrop-blur-md border-b border-gold/30 px-4 md:px-8 py-4 flex items-center justify-between text-cream w-full">
+            <nav className="bg-gradient-to-r from-primary to-primary-dark backdrop-blur-md border-b border-gold/30 px-4 md:px-8 py-4 flex items-center justify-between text-white w-full">
 
                 {/* 1. Logo Section */}
                 <Link href="/" className="flex items-center gap-3 shrink-0">
@@ -116,7 +116,7 @@ export function NavbarClient({ session }: NavbarClientProps) {
                             key={link.href}
                             href={link.href}
                             onClick={() => setIsOpen(false)}
-                            className="text-lg font-medium text-cream hover:text-gold border-b border-gold/10 pb-2"
+                            className="text-lg font-medium text-white hover:text-gold border-b border-gold/10 pb-2"
                         >
                             {link.label}
                         </Link>
@@ -125,11 +125,11 @@ export function NavbarClient({ session }: NavbarClientProps) {
                     {isAdmin && (
                         <div className="pt-2 border-t border-gold/20">
                             <p className="text-sm font-bold text-gold mb-2 uppercase tracking-wide">Admin Access</p>
-                            <Link href="/admin/banners" onClick={() => setIsOpen(false)} className="block py-2 text-cream/80 hover:text-white">Banners</Link>
-                            <Link href="/admin/blogs" onClick={() => setIsOpen(false)} className="block py-2 text-cream/80 hover:text-white">Blogs</Link>
-                            <Link href="/admin/khidmat" onClick={() => setIsOpen(false)} className="block py-2 text-cream/80 hover:text-white">Khidmat Requests</Link>
-                            <Link href="/admin/members" onClick={() => setIsOpen(false)} className="block py-2 text-cream/80 hover:text-white">Members</Link>
-                            <Link href="/inventory" onClick={() => setIsOpen(false)} className="block py-2 text-cream/80 hover:text-white">Inventory</Link>
+                            <Link href="/admin/banners" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Banners</Link>
+                            <Link href="/admin/blogs" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Blogs</Link>
+                            <Link href="/admin/khidmat" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Khidmat Requests</Link>
+                            <Link href="/admin/members" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Members</Link>
+                            <Link href="/inventory" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Inventory</Link>
                         </div>
                     )}
 

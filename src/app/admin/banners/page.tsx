@@ -32,7 +32,7 @@ export default async function BannerAdminPage() {
                 <div className="space-y-6">
                     {banners.map(banner => (
                         <OrnateCard key={banner.id} className="flex flex-col md:flex-row items-center p-6 gap-6 transition-all hover:shadow-xl">
-                            <div className="w-full md:w-64 aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gold/20 shadow-sm relative group">
+                            <div className="w-full md:w-64 aspect-[4/1] bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gold/20 shadow-sm relative group">
                                 <img src={banner.imageUrl} alt="Banner" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                             </div>

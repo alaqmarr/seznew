@@ -35,7 +35,7 @@ export default async function BlogsPage() {
                                         <span className="w-1 h-1 rounded-full bg-gold"></span>
                                         <span>{blog.author}</span>
                                     </div>
-                                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary-dark leading-tight">
+                                    <h2 className="text-3xl md:text-4xl font-[family-name:var(--font-lobster)] font-bold text-primary-dark leading-tight tracking-wide">
                                         {blog.title}
                                     </h2>
                                     <div className="w-16 h-[2px] bg-gold/50"></div>

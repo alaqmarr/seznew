@@ -105,7 +105,8 @@ function g2h(date: Date): MisriDate {
   // Epoch JDN 1948440 (July 16, 622 CE) is standard arithmetic.
 
   const hijriEpoch = 1948440;
-  const daysSinceEpoch = jdn - hijriEpoch;
+  // Automatic adjustment: +1 day offset as per user feedback (calendar was running one day behind)
+  const daysSinceEpoch = jdn - hijriEpoch + 1;
 
   // 30 year cycle = 10631 days
   const cycles = Math.floor(daysSinceEpoch / 10631);

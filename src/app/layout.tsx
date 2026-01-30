@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
-import { Inter, Merriweather } from "next/font/google";
+import { Poppins, Merriweather, Lobster_Two } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
 export const preferredRegion = ["sin1"]
-const inter = Inter({
-  variable: "--font-inter",
+const poppins = Poppins({
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
   subsets: ["latin"],
 });
 
 const merriweather = Merriweather({
   weight: ["300", "400", "700", "900"],
   variable: "--font-merriweather",
+  subsets: ["latin"],
+});
+
+const lobster = Lobster_Two({
+  weight: ["400", "700"],
+  variable: "--font-lobster",
   subsets: ["latin"],
 });
 
@@ -51,7 +58,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#258522ff" />
       </head>
       <body
-        className={`${inter.variable} ${merriweather.variable} antialiased flex flex-col min-h-screen`}
+        className={`${poppins.className} ${merriweather.variable} ${lobster.variable} antialiased flex flex-col min-h-screen`}
       >
         <Providers>
           <Navbar />

@@ -31,24 +31,24 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts }: 
             {/* Coupon Alert Bar */}
             <div
                 onClick={() => setIsOpen(true)}
-                className="w-full max-w-[851px] mx-auto px-4 sm:px-0 mb-6 animate-in slide-in-from-top-4 duration-700 cursor-pointer"
+                className="w-full max-w-3xl mx-auto px-4 sm:px-0 cursor-pointer relative z-30"
             >
-                <div className="bg-gradient-to-r from-primary-dark via-primary to-primary-dark text-cream p-4 rounded-xl shadow-lg border border-gold/30 flex items-center justify-between group hover:shadow-gold/20 transition-all transform hover:-translate-y-0.5">
+                <div className="bg-gradient-to-r from-primary-dark via-primary to-primary-dark text-white py-3 px-6 rounded-b-2xl shadow-md border-x border-b border-gold/30 flex items-center justify-between group hover:shadow-lg hover:shadow-gold/10 transition-all">
                     <div className="flex items-center gap-4">
-                        <div className="bg-gold/20 p-2 rounded-full ring-1 ring-gold/40 group-hover:bg-gold/30 transition-colors animate-pulse">
-                            <Utensils className="w-5 h-5 text-gold" />
+                        <div className="bg-gold/20 p-1.5 rounded-full ring-1 ring-gold/40 group-hover:bg-gold/30 transition-colors animate-pulse">
+                            <Utensils className="w-4 h-4 text-gold" />
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gold font-bold mb-0.5">Today's Menu • click to view</p>
-                            <p className="font-serif font-bold text-lg leading-none group-hover:text-white transition-colors">
+                            <p className="text-[10px] uppercase tracking-widest text-gold font-bold mb-0 leading-none">Today's Menu</p>
+                            <p className="font-bold text-lg leading-tight text-gold group-hover:text-gold-light transition-colors">
                                 {title}
                             </p>
                         </div>
                     </div>
 
-                    <div className="hidden sm:flex items-center gap-2 bg-black/20 px-3 py-1 rounded-lg border border-white/10">
-                        <ChefHat className="w-4 h-4 text-gold/80" />
-                        <span className="text-xs font-semibold tracking-wide">View Details</span>
+                    <div className="hidden sm:flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full border border-white/10 group-hover:bg-black/30 transition-colors">
+                        <span className="text-[10px] font-bold tracking-wide uppercase">View</span>
+                        <ChefHat className="w-3 h-3 text-gold" />
                     </div>
                 </div>
             </div>
@@ -74,7 +74,7 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts }: 
                                     <span className="inline-block px-3 py-1 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase tracking-widest border border-gold/20">
                                         Today's Feast
                                     </span>
-                                    <h3 className="font-serif text-2xl font-bold text-cream leading-tight">
+                                    <h3 className="text-3xl font-bold text-gold leading-tight">
                                         {title}
                                     </h3>
                                 </div>
@@ -85,7 +85,7 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts }: 
                                 {/* Menu Content */}
                                 <div className="p-8 space-y-6">
                                     <div className="space-y-2">
-                                        <h4 className="font-serif text-xl text-primary-dark font-bold">The Menu</h4>
+                                        <h4 className="font-[family-name:var(--font-lobster)] text-2xl text-primary-dark font-bold tracking-wide">The Menu</h4>
                                         <div className="w-16 h-1 bg-gold mx-auto rounded-full" />
                                     </div>
 
@@ -97,18 +97,19 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts }: 
                                 </div>
 
                                 {/* Hall Allocation */}
-                                <div className="bg-primary-dark/5 p-4 border-y border-gold/10">
-                                    <h4 className="text-xs font-bold text-primary-dark uppercase tracking-widest mb-3">Hall Allocation</h4>
-                                    <div className="bg-white rounded-lg border border-gold/20 overflow-hidden text-sm">
-                                        <div className="grid grid-cols-2 bg-primary-dark text-cream text-xs font-bold uppercase py-2 px-4 text-left">
+                                {/* Hall Allocation */}
+                                <div className="bg-primary-dark text-cream border-t border-gold/20 relative overflow-hidden">
+                                    <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" />
+                                    <div className="relative z-10">
+                                        <div className="grid grid-cols-2 bg-black/20 text-gold text-xs font-bold uppercase py-2 px-4 text-left tracking-wider">
                                             <span>Hall Name</span>
                                             <span className="text-right">Thaals</span>
                                         </div>
-                                        <div className="divide-y divide-neutral-100 max-h-48 overflow-y-auto overscroll-contain">
+                                        <div className="divide-y divide-white/10 text-cream text-sm">
                                             {hallData.map(([name, count]: any, idx: number) => (
-                                                <div key={idx} className="grid grid-cols-2 py-2 px-4 text-neutral-700 hover:bg-neutral-50 transition-colors">
+                                                <div key={idx} className="grid grid-cols-2 py-2 px-4 hover:bg-white/5 transition-colors">
                                                     <span className="font-medium text-left">{name}</span>
-                                                    <span className="text-right font-bold text-primary">{count}</span>
+                                                    <span className="text-right font-bold text-gold">{count}</span>
                                                 </div>
                                             ))}
                                         </div>

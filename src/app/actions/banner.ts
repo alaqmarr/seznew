@@ -16,6 +16,20 @@ export async function createBanner(formData: FormData) {
   const href = formData.get("href") as string;
   const isActive = formData.get("isActive") === "on";
 
+  // Countdown Fields
+  const countdownTargetStr = formData.get("countdownTarget") as string;
+  const countdownLabel = formData.get("countdownLabel") as string;
+  const xStr = formData.get("x") as string;
+  const yStr = formData.get("y") as string;
+  const countdownSize = (formData.get("countdownSize") as string) || "normal";
+  const countdownColor = (formData.get("countdownColor") as string) || "gold";
+
+  const countdownTarget = countdownTargetStr
+    ? new Date(countdownTargetStr)
+    : undefined;
+  const x = xStr ? parseFloat(xStr) : 50;
+  const y = yStr ? parseFloat(yStr) : 50;
+
   if (!imageUrl) {
     return { error: "Image URL is required" };
   }
@@ -26,6 +40,12 @@ export async function createBanner(formData: FormData) {
         imageUrl,
         href,
         isActive,
+        countdownTarget,
+        countdownLabel,
+        x,
+        y,
+        countdownSize,
+        countdownColor,
       },
     });
     revalidatePath("/");
