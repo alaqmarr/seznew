@@ -4,6 +4,7 @@ import { Utensils, Calendar, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { GoldenButton } from "@/components/ui/premium-components"; // Assuming needed or general ui
 import Link from "next/link";
+import { formatInTimeZone } from "date-fns-tz";
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +73,7 @@ export default async function MenuPage() {
 
                         <div className="relative z-10 flex flex-col items-center gap-4">
                             <span className="inline-block px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs font-bold uppercase tracking-widest">
-                                {format(event.occasionDate, "EEEE, MMMM do")}
+                                {formatInTimeZone(event.occasionDate, "Asia/Kolkata", "EEEE, MMMM do")}
                             </span>
 
                             <h1 className="text-4xl md:text-6xl font-bold text-gold py-2">
