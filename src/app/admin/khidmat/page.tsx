@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { OrnateHeading, OrnateCard } from "@/components/ui/premium-components";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { AdminActionButtons } from "@/components/admin/AdminActionButtons";
 
 export default async function KhidmatAdminPage() {
     const session = await getServerSession(authOptions);
@@ -23,16 +24,17 @@ export default async function KhidmatAdminPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-primary-dark/5 hover:bg-primary-dark/5 border-b border-primary/10">
-                                    <TableHead className="py-5 px-8 text-primary-dark font-bold uppercase tracking-wider text-xs w-1/4">Event / Miqat</TableHead>
+                                    <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Event / Miqat</TableHead>
                                     <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Host Details</TableHead>
                                     <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Event Date</TableHead>
-                                    <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs text-right">Submitted Details</TableHead>
+                                    <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Submitted</TableHead>
+                                    <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {requests.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center py-24 text-neutral-400">
+                                        <TableCell colSpan={5} className="text-center py-24 text-neutral-400">
                                             <p className="font-serif text-lg text-neutral-600 mb-1">No khidmat requests</p>
                                             <p className="text-sm">Invitations will appear here when submitted.</p>
                                         </TableCell>
@@ -40,24 +42,27 @@ export default async function KhidmatAdminPage() {
                                 ) : (
                                     requests.map((req) => (
                                         <TableRow key={req.id} className="hover:bg-gold/5 transition-colors border-b border-neutral-100 text-sm">
-                                            <TableCell className="py-5 px-8">
-                                                <span className="font-serif font-bold text-xl text-primary-dark block mb-1">{req.miqat}</span>
+                                            <TableCell className="py-5 px-6">
+                                                <span className="font-serif font-bold text-lg text-primary-dark block">{req.miqat}</span>
                                             </TableCell>
                                             <TableCell className="py-5 px-6">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="font-bold text-neutral-800 text-base">{req.name}</span>
+                                                    <span className="font-bold text-neutral-800">{req.name}</span>
                                                     <a href={`tel:${req.phone}`} className="font-mono text-neutral-500 text-xs tracking-wide hover:text-gold transition-colors">{req.phone}</a>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-5 px-6">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-neutral-800">{format(new Date(req.date), "EEEE, MMMM do, yyyy")}</span>
-                                                    <span className="text-xs text-neutral-400">Event Date</span>
-                                                </div>
+                                                <span className="font-medium text-neutral-800">{format(new Date(req.date), "MMM do, yyyy")}</span>
+                                            </TableCell>
+                                            <TableCell className="py-5 px-6">
+                                                <span className="text-neutral-500 text-xs">{format(new Date(req.createdAt), "PP")}</span>
                                             </TableCell>
                                             <TableCell className="py-5 px-6 text-right">
-                                                <span className="text-xs text-neutral-400 font-medium">Submitted on</span>
-                                                <span className="block text-neutral-600 text-xs mt-0.5">{format(new Date(req.createdAt), "PP 'at' p")}</span>
+                                                <AdminActionButtons
+                                                    id={req.id}
+                                                    currentStatus={req.status}
+                                                    type="khidmat"
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { OrnateHeading, OrnateCard } from "@/components/ui/premium-components";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { AdminActionButtons } from "@/components/admin/AdminActionButtons";
 
 export default async function MembersAdminPage() {
     const session = await getServerSession(authOptions);
@@ -28,7 +29,7 @@ export default async function MembersAdminPage() {
                                     <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Member Details</TableHead>
                                     <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Contact Info</TableHead>
                                     <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Qualifications</TableHead>
-                                    <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs">Interests</TableHead>
+                                    <TableHead className="py-5 px-6 text-primary-dark font-bold uppercase tracking-wider text-xs text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -46,10 +47,7 @@ export default async function MembersAdminPage() {
                                             <TableCell className="py-5 px-6">
                                                 <div className="flex flex-col gap-0.5">
                                                     <span className="font-bold text-neutral-800 text-base">{m.title} {m.name}</span>
-                                                    <span className="text-xs text-neutral-500 font-medium mb-1">Born: {format(new Date(m.dob), "PPP")}</span>
-                                                    <span className="inline-flex w-fit items-center px-2 py-0.5 rounded bg-gold/10 text-primary-dark text-[10px] font-bold border border-gold/20 uppercase tracking-wide">
-                                                        {m.status || "Pending Review"}
-                                                    </span>
+                                                    <span className="text-xs text-neutral-500 font-medium">Born: {format(new Date(m.dob), "PPP")}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-5 px-6">
@@ -61,22 +59,15 @@ export default async function MembersAdminPage() {
                                             <TableCell className="py-5 px-6">
                                                 <div className="flex flex-wrap gap-2">
                                                     {m.quranHifz && <span className="inline-flex items-center px-2 py-1 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-100 uppercase tracking-wide">{m.quranHifz}</span>}
-                                                    {m.passport && <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100 uppercase tracking-wide">Passport: {m.passport}</span>}
+                                                    <span className="text-xs text-neutral-600">{m.occupation}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="py-5 px-6">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-gold"></span>
-                                                        <span className="text-neutral-700 font-medium truncate max-w-[150px]" title={m.occupation}>{m.occupation}</span>
-                                                    </div>
-                                                    {m.sports && (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-300"></span>
-                                                            <span className="text-neutral-500 text-xs truncate max-w-[150px]" title={m.sports}>{m.sports}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <TableCell className="py-5 px-6 text-right">
+                                                <AdminActionButtons
+                                                    id={m.id}
+                                                    currentStatus={m.status}
+                                                    type="member"
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))

@@ -45,11 +45,16 @@ function CountdownPill({ target, label, x, y, size = "normal", color = "gold" }:
     }, [target]);
 
     const getSizeClasses = (s?: string | null) => {
+        // Responsive sizes: mobile → tablet → desktop
         switch (s) {
-            case "small": return "text-sm px-3 py-1.5 min-w-[80px]";
-            case "large": return "text-3xl px-8 py-4 min-w-[160px]";
-            case "xl": return "text-5xl px-10 py-6 min-w-[200px]";
-            default: return "text-xl px-5 py-2.5 min-w-[120px]"; // normal
+            case "small":
+                return "text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 min-w-[60px] md:min-w-[80px]";
+            case "large":
+                return "text-base md:text-xl lg:text-3xl px-3 md:px-5 lg:px-8 py-2 md:py-3 lg:py-4 min-w-[80px] md:min-w-[120px] lg:min-w-[160px]";
+            case "xl":
+                return "text-lg md:text-2xl lg:text-5xl px-4 md:px-6 lg:px-10 py-2.5 md:py-4 lg:py-6 min-w-[100px] md:min-w-[150px] lg:min-w-[200px]";
+            default: // normal
+                return "text-sm md:text-lg lg:text-xl px-3 md:px-4 lg:px-5 py-1.5 md:py-2 lg:py-2.5 min-w-[70px] md:min-w-[100px] lg:min-w-[120px]";
         }
     };
 
