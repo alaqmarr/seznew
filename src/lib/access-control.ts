@@ -2,28 +2,64 @@ import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+export interface ModuleLinkInfo {
+  id: string;
+  path: string;
+  label: string | null;
+}
+
 export interface ModuleInfo {
   id: string;
   name: string;
-  path: string | null; // Path is optional - modules can be for components
-  elementId: string | null;
+  links: ModuleLinkInfo[];
   icon: string | null;
 }
 
 /**
- * Check if a user has access to a specific module by path
+ * Match a dynamic route pattern against an actual path
+ * Pattern: /admin/banners/[id] matches /admin/banners/abc123
+ * Pattern: /admin/banners/[id]/edit matches /admin/banners/abc123/edit
+ */
+function matchDynamicPath(pattern: string, actualPath: string): boolean {
+  const patternParts = pattern.split("/").filter(Boolean);
+  const actualParts = actualPath.split("/").filter(Boolean);
+
+  if (patternParts.length !== actualParts.length) return false;
+
+  return patternParts.every(
+    (part, i) =>
+      (part.startsWith("[") && part.endsWith("]")) || part === actualParts[i],
+  );
+}
+
+/**
+ * Check if a user has access to a specific path via any of their module links
  */
 export async function hasModuleAccess(
   userId: string,
   path: string,
 ): Promise<boolean> {
-  const access = await prisma.userModuleAccess.findFirst({
-    where: {
-      userId,
-      module: { path },
+  // Get all module links the user has access to
+  const accessRecords = await prisma.userModuleAccess.findMany({
+    where: { userId },
+    include: {
+      module: {
+        include: { links: true },
+      },
     },
   });
-  return !!access;
+
+  // Check if any link pattern matches the requested path
+  for (const record of accessRecords) {
+    for (const link of record.module.links) {
+      // Exact match or dynamic route match
+      if (link.path === path || matchDynamicPath(link.path, path)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -32,23 +68,31 @@ export async function hasModuleAccess(
 export async function getUserModules(userId: string): Promise<ModuleInfo[]> {
   const accessRecords = await prisma.userModuleAccess.findMany({
     where: { userId },
-    include: { module: true },
+    include: {
+      module: {
+        include: {
+          links: { orderBy: { order: "asc" } },
+        },
+      },
+    },
   });
 
   return accessRecords.map((record) => ({
     id: record.module.id,
     name: record.module.name,
-    path: record.module.path,
-    elementId: record.module.elementId,
+    links: record.module.links.map((link) => ({
+      id: link.id,
+      path: link.path,
+      label: link.label,
+    })),
     icon: record.module.icon,
   }));
 }
 
 /**
  * Check if the current session can access a path
- * - ADMIN: always true
- * - ADMIN_CUSTOM: check module access
- * - Others: depends on path (public vs admin)
+ * - ADMIN: always true for admin paths
+ * - Any role with module access: check module links
  */
 export async function canAccessPath(path: string): Promise<boolean> {
   const session = await getServerSession(authOptions);
@@ -58,24 +102,21 @@ export async function canAccessPath(path: string): Promise<boolean> {
   }
 
   const role = (session.user as any).role;
+  const userId = (session.user as any).id;
 
   // ADMIN has full access
   if (role === "ADMIN") {
     return true;
   }
 
-  // ADMIN_CUSTOM needs explicit module access
-  if (role === "ADMIN_CUSTOM") {
-    const userId = (session.user as any).id;
-    return await hasModuleAccess(userId, path);
-  }
-
-  // Other roles: no admin access
-  return false;
+  // Any other role: check module access
+  return await hasModuleAccess(userId, path);
 }
 
 /**
  * Get modules for navbar display based on user role
+ * - ADMIN sees all modules
+ * - Any user with assigned modules sees those modules
  */
 export async function getNavModules(): Promise<ModuleInfo[]> {
   const session = await getServerSession(authOptions);
@@ -91,23 +132,24 @@ export async function getNavModules(): Promise<ModuleInfo[]> {
   if (role === "ADMIN") {
     const allModules = await prisma.module.findMany({
       orderBy: { name: "asc" },
+      include: {
+        links: { orderBy: { order: "asc" } },
+      },
     });
     return allModules.map((m) => ({
       id: m.id,
       name: m.name,
-      path: m.path,
-      elementId: m.elementId,
+      links: m.links.map((link) => ({
+        id: link.id,
+        path: link.path,
+        label: link.label,
+      })),
       icon: m.icon,
     }));
   }
 
-  // ADMIN_CUSTOM sees only assigned modules
-  if (role === "ADMIN_CUSTOM") {
-    return await getUserModules(userId);
-  }
-
-  // Others see nothing in admin menu
-  return [];
+  // Any role with assigned modules sees those modules
+  return await getUserModules(userId);
 }
 
 /**
@@ -131,11 +173,7 @@ export async function requireAccess(
     return { authorized: true, userId };
   }
 
-  // ADMIN_CUSTOM check module
-  if (role === "ADMIN_CUSTOM") {
-    const hasAccess = await hasModuleAccess(userId, path);
-    return { authorized: hasAccess, userId };
-  }
-
-  return { authorized: false };
+  // Any role: check module access
+  const hasAccess = await hasModuleAccess(userId, path);
+  return { authorized: hasAccess, userId };
 }

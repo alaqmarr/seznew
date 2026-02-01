@@ -9,7 +9,6 @@ export default function JoinPage() {
                 <OrnateHeading
                     arabic="بسم الله الرحمن الرحيم"
                     title="Join the Committee"
-                    subtitle="Become a dedicated member of Shabab Ul Eidiz Zahabi Secunderabad"
                 />
                 <JoinForm />
             </OrnateCard>

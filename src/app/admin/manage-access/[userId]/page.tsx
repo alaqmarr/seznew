@@ -35,7 +35,8 @@ export default async function UserAccessPage({ params }: PageProps) {
     }
 
     const allModules = await prisma.module.findMany({
-        orderBy: { name: 'asc' }
+        orderBy: { name: 'asc' },
+        include: { links: { orderBy: { order: 'asc' } } }
     });
 
     const grantedModuleIds = user.moduleAccess.map(access => access.moduleId);

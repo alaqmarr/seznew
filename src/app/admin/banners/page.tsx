@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { hasModuleAccess } from "@/lib/access-control";
 import { toggleBannerStatus, deleteBanner } from "@/app/actions/banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,7 +15,17 @@ export const dynamic = 'force-dynamic';
 export default async function BannerAdminPage() {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "ADMIN") {
+    if (!session?.user) {
+        redirect("/login");
+    }
+
+    const userId = (session.user as any).id;
+    const role = (session.user as any).role;
+    const isAdmin = role === "ADMIN";
+
+    const canAccess = isAdmin || await hasModuleAccess(userId, "/admin/banners");
+
+    if (!canAccess) {
         redirect("/login");
     }
 

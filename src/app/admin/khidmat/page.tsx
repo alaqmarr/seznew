@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { hasModuleAccess } from "@/lib/access-control";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -11,7 +12,19 @@ export const dynamic = 'force-dynamic';
 
 export default async function KhidmatAdminPage() {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "ADMIN") redirect("/login");
+    if (!session?.user) {
+        redirect("/login");
+    }
+
+    const userId = (session.user as any).id;
+    const role = (session.user as any).role;
+    const isAdmin = role === "ADMIN";
+
+    const canAccess = isAdmin || await hasModuleAccess(userId, "/admin/khidmat");
+
+    if (!canAccess) {
+        redirect("/login");
+    }
 
     const requests = await prisma.khidmatRequest.findMany({
         orderBy: { createdAt: 'desc' }

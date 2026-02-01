@@ -9,7 +9,6 @@ export default function KhidmatPage() {
                 <OrnateHeading
                     arabic="بسم الله الرحمن الرحيم"
                     title="Khidmat Invitation"
-                    subtitle="Invite Shabab Ul Eidiz Zahabi for Khidmat"
                 />
                 <KhidmatForm />
             </OrnateCard>

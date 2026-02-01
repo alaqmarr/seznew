@@ -32,6 +32,7 @@ export async function MenuAlert() {
                 description: true,
                 menu: true,
                 occasionTime: true,
+                occasionDate: true,
                 thaalCount: true,
                 hall: true,
                 hallCounts: true
@@ -48,6 +49,7 @@ export async function MenuAlert() {
                 thaalCount={todaysEvent.thaalCount}
                 halls={todaysEvent.hall || []}
                 hallCounts={todaysEvent.hallCounts}
+                occasionDate={todaysEvent.occasionDate.toISOString()}
             />
         );
     } catch (error) {

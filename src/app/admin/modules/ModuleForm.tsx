@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { createModule } from "@/app/actions/modules";
-import { Loader2, Plus, Route, Hash, FileText, Sparkles, Key } from "lucide-react";
+import { Loader2, Plus, Route, FileText, Sparkles, Key, X, Link2 } from "lucide-react";
 
 // Slugify helper - matches server-side logic
 function slugify(text: string): string {
@@ -14,35 +14,62 @@ function slugify(text: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
+interface LinkInput {
+    path: string;
+    label: string;
+}
+
 export function ModuleForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: "",
-        path: "",
-        elementId: "",
         description: "",
         icon: ""
     });
+    const [links, setLinks] = useState<LinkInput[]>([{ path: "", label: "" }]);
 
     // Real-time ID preview
     const previewId = useMemo(() => slugify(formData.name), [formData.name]);
+
+    const addLink = () => {
+        setLinks([...links, { path: "", label: "" }]);
+    };
+
+    const removeLink = (index: number) => {
+        if (links.length > 1) {
+            setLinks(links.filter((_, i) => i !== index));
+        }
+    };
+
+    const updateLink = (index: number, field: keyof LinkInput, value: string) => {
+        const newLinks = [...links];
+        newLinks[index][field] = value;
+        setLinks(newLinks);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
 
+        // Filter out empty links (links are optional)
+        const validLinks = links.filter(l => l.path.trim() !== "");
+
         const result = await createModule({
             name: formData.name,
-            path: formData.path,
-            elementId: formData.elementId || undefined,
+            links: validLinks.map((l, i) => ({
+                path: l.path.trim(),
+                label: l.label.trim() || undefined,
+                order: i
+            })),
             description: formData.description || undefined,
             icon: formData.icon || undefined
         });
 
         if (result.success) {
-            setFormData({ name: "", path: "", elementId: "", description: "", icon: "" });
+            setFormData({ name: "", description: "", icon: "" });
+            setLinks([{ path: "", label: "" }]);
         } else {
             setError(result.error || "Failed to create module");
         }
@@ -84,35 +111,6 @@ export function ModuleForm() {
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">
-                        <Route className="w-4 h-4 inline mr-1" />
-                        Path (optional)
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.path}
-                        onChange={(e) => setFormData({ ...formData, path: e.target.value })}
-                        placeholder="e.g., /admin/banners"
-                        className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none"
-                    />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                        <Hash className="w-4 h-4 inline mr-1" />
-                        Element ID (optional)
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.elementId}
-                        onChange={(e) => setFormData({ ...formData, elementId: e.target.value })}
-                        placeholder="e.g., banner-delete-btn"
-                        className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
                         Icon (Lucide name)
                     </label>
                     <input
@@ -123,6 +121,58 @@ export function ModuleForm() {
                         className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none"
                     />
                 </div>
+            </div>
+
+            {/* Links Section */}
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1 text-sm font-medium text-neutral-700">
+                        <Link2 className="w-4 h-4" />
+                        Module Links (optional)
+                    </label>
+                    <button
+                        type="button"
+                        onClick={addLink}
+                        className="text-xs text-primary hover:text-primary-dark flex items-center gap-1"
+                    >
+                        <Plus className="w-3 h-3" /> Add Link
+                    </button>
+                </div>
+
+                <div className="space-y-2">
+                    {links.map((link, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <div className="flex-1 grid grid-cols-2 gap-2">
+                                <input
+                                    type="text"
+                                    value={link.path}
+                                    onChange={(e) => updateLink(index, "path", e.target.value)}
+                                    placeholder="/admin/banners or /admin/banners/[id]"
+                                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none text-sm"
+                                />
+                                <input
+                                    type="text"
+                                    value={link.label}
+                                    onChange={(e) => updateLink(index, "label", e.target.value)}
+                                    placeholder="Label (optional)"
+                                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none text-sm"
+                                />
+                            </div>
+                            {links.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeLink(index)}
+                                    className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <p className="text-xs text-neutral-400">
+                    Use [param] for dynamic routes, e.g., /admin/banners/[id] matches /admin/banners/any-id
+                </p>
             </div>
 
             <div>

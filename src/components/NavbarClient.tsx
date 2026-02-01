@@ -2,15 +2,20 @@
 
 import Link from "next/link";
 import { GoldenButton } from "./ui/premium-components";
-import { Menu, X, ChevronDown, LayoutDashboard, FileText, Users, Box, LogOut, Settings, Shield } from "lucide-react";
+import { Menu, X, ChevronDown, LayoutDashboard, FileText, Users, Box, LogOut, Settings, Shield, User, Calendar, Image } from "lucide-react";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
+
+interface ModuleLinkInfo {
+    id: string;
+    path: string;
+    label: string | null;
+}
 
 interface ModuleInfo {
     id: string;
     name: string;
-    path: string | null;  // Path is optional - can be null for component-level modules
-    elementId: string | null;
+    links: ModuleLinkInfo[];
     icon: string | null;
 }
 
@@ -33,18 +38,20 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
 
     const role = session?.user?.role;
     const isAdmin = role === "ADMIN";
-    const isAdminCustom = role === "ADMIN_CUSTOM";
-    const hasAdminAccess = isAdmin || (isAdminCustom && userModules.length > 0);
 
-    // For ADMIN, show all default modules; for ADMIN_CUSTOM, use their granted modules
+    // Any logged-in user with modules gets access panel
+    const hasModuleAccess = isAdmin || userModules.length > 0;
+
+    // For ADMIN, show all default modules; for others, use their granted modules
     const adminModules: ModuleInfo[] = isAdmin ? [
-        { id: "banners", name: "Banners", path: "/admin/banners", icon: "LayoutDashboard", elementId: null },
-        { id: "blogs", name: "Blogs", path: "/admin/blogs", icon: "FileText", elementId: null },
-        { id: "khidmat", name: "Khidmat Requests", path: "/admin/khidmat", icon: "FileText", elementId: null },
-        { id: "members", name: "Members", path: "/admin/members", icon: "Users", elementId: null },
-        { id: "inventory", name: "Inventory", path: "/inventory", icon: "Box", elementId: null },
-        { id: "modules", name: "Modules", path: "/admin/modules", icon: "Settings", elementId: null },
-        { id: "manage-access", name: "Manage Access", path: "/admin/manage-access", icon: "Shield", elementId: null },
+        { id: "banners", name: "Banners", links: [{ id: "1", path: "/admin/banners", label: null }], icon: "Image" },
+        { id: "blogs", name: "Blogs", links: [{ id: "2", path: "/admin/blogs", label: null }], icon: "FileText" },
+        { id: "khidmat", name: "Khidmat Requests", links: [{ id: "3", path: "/admin/khidmat", label: null }], icon: "FileText" },
+        { id: "members", name: "Members", links: [{ id: "4", path: "/admin/members", label: null }], icon: "Users" },
+        { id: "users", name: "Users", links: [{ id: "8", path: "/admin/users", label: null }], icon: "User" },
+        { id: "inventory", name: "Inventory", links: [{ id: "5", path: "/inventory", label: null }], icon: "Box" },
+        { id: "modules", name: "Modules", links: [{ id: "6", path: "/admin/modules", label: null }], icon: "Settings" },
+        { id: "manage-access", name: "Manage Access", links: [{ id: "7", path: "/admin/manage-access", label: null }], icon: "Shield" },
     ] : userModules;
 
     const getIcon = (iconName: string | null) => {
@@ -55,8 +62,17 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
             case "Box": return <Box className="w-4 h-4" />;
             case "Settings": return <Settings className="w-4 h-4" />;
             case "Shield": return <Shield className="w-4 h-4" />;
+            case "Image": return <Image className="w-4 h-4" />;
+            case "Calendar": return <Calendar className="w-4 h-4" />;
+            case "User": return <User className="w-4 h-4" />;
             default: return <FileText className="w-4 h-4" />;
         }
+    };
+
+    // Get the primary link for a module (first link or the one without label)
+    const getPrimaryLink = (module: ModuleInfo): string | null => {
+        if (module.links.length === 0) return null;
+        return module.links[0].path;
     };
 
     return (
@@ -87,27 +103,66 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
 
                 {/* 3. Right Section - CTA & Auth */}
                 <div className="hidden md:flex items-center gap-4 shrink-0 relative">
-                    {hasAdminAccess ? (
+                    {hasModuleAccess ? (
                         <div className="relative group">
                             <button
                                 onClick={() => setShowAdminMenu(!showAdminMenu)}
                                 className="flex items-center gap-2 text-sm font-bold text-gold hover:text-cream transition-colors"
                             >
-                                Admin Panel <ChevronDown className="w-4 h-4" />
+                                {isAdmin ? "Admin Panel" : "My Access"} <ChevronDown className="w-4 h-4" />
                             </button>
 
                             {/* Dropdown Menu */}
-                            <div className="absolute top-full right-0 mt-4 w-56 bg-white rounded-xl shadow-xl border border-gold/20 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
+                            <div className="absolute top-full right-0 mt-4 w-64 bg-white rounded-xl shadow-xl border border-gold/20 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
                                 <div className="p-2 space-y-1">
-                                    {adminModules.filter(m => m.path).map((module) => (
+                                    {/* Profile link for all logged-in users */}
+                                    {session && (
                                         <Link
-                                            key={module.id}
-                                            href={module.path!}
+                                            href="/profile"
                                             className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
                                         >
-                                            {getIcon(module.icon)} {module.name}
+                                            <User className="w-4 h-4" /> My Profile
                                         </Link>
-                                    ))}
+                                    )}
+
+                                    {adminModules.length > 0 && <div className="h-px bg-neutral-100 my-1" />}
+
+                                    {adminModules.map((module) => {
+                                        const primaryLink = getPrimaryLink(module);
+                                        if (!primaryLink) return null;
+
+                                        // If module has multiple links, show sub-items
+                                        if (module.links.length > 1) {
+                                            return (
+                                                <div key={module.id} className="space-y-0.5">
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                                                        {getIcon(module.icon)} {module.name}
+                                                    </div>
+                                                    {module.links.map((link) => (
+                                                        <Link
+                                                            key={link.id}
+                                                            href={link.path}
+                                                            className="flex items-center gap-2 px-3 py-2 pl-9 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
+                                                        >
+                                                            {link.label || link.path}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            );
+                                        }
+
+                                        // Single link module
+                                        return (
+                                            <Link
+                                                key={module.id}
+                                                href={primaryLink}
+                                                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
+                                            >
+                                                {getIcon(module.icon)} {module.name}
+                                            </Link>
+                                        );
+                                    })}
+
                                     <div className="h-px bg-neutral-100 my-1" />
                                     <button
                                         onClick={() => signOut()}
@@ -119,12 +174,20 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                             </div>
                         </div>
                     ) : session ? (
-                        <button
-                            onClick={() => signOut()}
-                            className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
-                        >
-                            Logout
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <Link
+                                href="/profile"
+                                className="text-sm font-medium text-gold hover:text-cream transition-colors"
+                            >
+                                Profile
+                            </Link>
+                            <button
+                                onClick={() => signOut()}
+                                className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     ) : (
                         <Link href="/login" className="text-sm font-medium hover:text-gold transition-colors whitespace-nowrap">
                             Login
@@ -158,19 +221,55 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                         </Link>
                     ))}
 
-                    {hasAdminAccess && (
+                    {/* Profile link for logged-in users */}
+                    {session && (
+                        <Link
+                            href="/profile"
+                            onClick={() => setIsOpen(false)}
+                            className="text-lg font-medium text-gold hover:text-cream border-b border-gold/10 pb-2"
+                        >
+                            My Profile
+                        </Link>
+                    )}
+
+                    {hasModuleAccess && (
                         <div className="pt-2 border-t border-gold/20">
-                            <p className="text-sm font-bold text-gold mb-2 uppercase tracking-wide">Admin Access</p>
-                            {adminModules.filter(m => m.path).map((module) => (
-                                <Link
-                                    key={module.id}
-                                    href={module.path!}
-                                    onClick={() => setIsOpen(false)}
-                                    className="block py-2 text-white/80 hover:text-gold"
-                                >
-                                    {module.name}
-                                </Link>
-                            ))}
+                            <p className="text-sm font-bold text-gold mb-2 uppercase tracking-wide">
+                                {isAdmin ? "Admin Access" : "My Access"}
+                            </p>
+                            {adminModules.map((module) => {
+                                const primaryLink = getPrimaryLink(module);
+                                if (!primaryLink) return null;
+
+                                if (module.links.length > 1) {
+                                    return (
+                                        <div key={module.id} className="mb-2">
+                                            <p className="text-xs text-gold/70 uppercase tracking-wide mb-1">{module.name}</p>
+                                            {module.links.map((link) => (
+                                                <Link
+                                                    key={link.id}
+                                                    href={link.path}
+                                                    onClick={() => setIsOpen(false)}
+                                                    className="block py-1.5 pl-3 text-white/80 hover:text-gold"
+                                                >
+                                                    {link.label || link.path}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <Link
+                                        key={module.id}
+                                        href={primaryLink}
+                                        onClick={() => setIsOpen(false)}
+                                        className="block py-2 text-white/80 hover:text-gold"
+                                    >
+                                        {module.name}
+                                    </Link>
+                                );
+                            })}
                         </div>
                     )}
 

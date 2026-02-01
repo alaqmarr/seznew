@@ -75,9 +75,6 @@ export default async function EventsPage() {
             <div className="max-w-7xl mx-auto space-y-8">
                 <OrnateHeading
                     title="Community Calendar"
-                    subtitle={canViewPrivate
-                        ? "Public and private events with Hijri dates"
-                        : "Upcoming public events and Hijri dates"}
                     arabic="التقويم الهجري"
                 />
 

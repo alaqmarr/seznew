@@ -5,22 +5,19 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-// Slugify helper - converts "Manage Banners" to "manage-banners"
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "") // Remove non-word chars
-    .replace(/[\s_-]+/g, "-") // Replace spaces and underscores with hyphens
-    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-}
+import { slugify, getHallModuleId } from "@/lib/utils";
 
 // ============ Module Actions ============
 
+interface ModuleLinkInput {
+  path: string;
+  label?: string;
+  order?: number;
+}
+
 export async function createModule(data: {
   name: string;
-  path?: string;
-  elementId?: string;
+  links: ModuleLinkInput[];
   description?: string;
   icon?: string;
 }) {
@@ -36,11 +33,17 @@ export async function createModule(data: {
       data: {
         id: moduleId,
         name: data.name,
-        path: data.path || null,
-        elementId: data.elementId || null,
         description: data.description || null,
         icon: data.icon || null,
+        links: {
+          create: data.links.map((link, index) => ({
+            path: link.path,
+            label: link.label || null,
+            order: link.order ?? index,
+          })),
+        },
       },
+      include: { links: true },
     });
     revalidatePath("/admin/modules");
     return { success: true, module };
@@ -73,10 +76,9 @@ export async function updateModule(
   id: string,
   data: {
     name?: string;
-    path?: string;
-    elementId?: string | null;
     description?: string | null;
     icon?: string | null;
+    links?: ModuleLinkInput[];
   },
 ) {
   const session = await getServerSession(authOptions);
@@ -85,15 +87,75 @@ export async function updateModule(
   }
 
   try {
+    // If links are provided, delete existing and recreate
+    if (data.links) {
+      await prisma.moduleLink.deleteMany({ where: { moduleId: id } });
+      await prisma.moduleLink.createMany({
+        data: data.links.map((link, index) => ({
+          moduleId: id,
+          path: link.path,
+          label: link.label || null,
+          order: link.order ?? index,
+        })),
+      });
+    }
+
+    // Update module fields
     await prisma.module.update({
       where: { id },
-      data,
+      data: {
+        name: data.name,
+        description: data.description,
+        icon: data.icon,
+      },
     });
+
     revalidatePath("/admin/modules");
     return { success: true };
   } catch (error) {
     console.error("Failed to update module:", error);
     return { success: false, error: "Failed to update module" };
+  }
+}
+
+// ============ Module Link Actions ============
+
+export async function addModuleLink(moduleId: string, link: ModuleLinkInput) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    const newLink = await prisma.moduleLink.create({
+      data: {
+        moduleId,
+        path: link.path,
+        label: link.label || null,
+        order: link.order ?? 0,
+      },
+    });
+    revalidatePath("/admin/modules");
+    return { success: true, link: newLink };
+  } catch (error) {
+    console.error("Failed to add link:", error);
+    return { success: false, error: "Failed to add link" };
+  }
+}
+
+export async function deleteModuleLink(linkId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await prisma.moduleLink.delete({ where: { id: linkId } });
+    revalidatePath("/admin/modules");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete link:", error);
+    return { success: false, error: "Failed to delete link" };
   }
 }
 
@@ -163,5 +225,81 @@ export async function updateUserModules(userId: string, moduleIds: string[]) {
   } catch (error) {
     console.error("Failed to update user modules:", error);
     return { success: false, error: "Failed to update modules" };
+  }
+}
+
+// ============ Hall Module Generator ============
+
+export async function getHallModuleStatus() {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return [];
+  }
+
+  const halls = await prisma.hall.findMany({
+    orderBy: { name: "asc" },
+    select: { name: true },
+  });
+
+  const modules = await prisma.module.findMany({
+    where: { id: { startsWith: "hall-" } },
+    select: { id: true, name: true },
+  });
+
+  const existingModuleIds = new Set(modules.map((m) => m.id));
+
+  return halls.map((h) => {
+    const moduleId = getHallModuleId(h.name);
+    const exists = existingModuleIds.has(moduleId);
+    return {
+      hallName: h.name,
+      moduleId,
+      exists,
+      existingName: exists
+        ? modules.find((m) => m.id === moduleId)?.name || null
+        : null,
+    };
+  });
+}
+
+export async function createHallModule(hallName: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const moduleId = getHallModuleId(hallName);
+
+  try {
+    // Check if exists
+    const exists = await prisma.module.findUnique({ where: { id: moduleId } });
+    if (exists) {
+      return { success: false, error: "Module already exists" };
+    }
+
+    await prisma.module.create({
+      data: {
+        id: moduleId,
+        name: `Manage ${hallName}`, // e.g. "Manage 1st Floor"
+        description: `Access to update thaal counts for ${hallName}`,
+        icon: "Utensils", // Default icon
+        links: {
+          // No specific link for this module, it's a permission module?
+          // Ore maybe it links to /menu?
+          // Usually these are just permission flags.
+          // But our schema requires links?
+          // Let's check schema. Link is optional relation?
+          // links ModuleLink[]
+          // It's a relation, so it can be empty.
+          create: [],
+        },
+      },
+    });
+
+    revalidatePath("/admin/modules");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to create hall module:", error);
+    return { success: false, error: "Failed to create hall module" };
   }
 }

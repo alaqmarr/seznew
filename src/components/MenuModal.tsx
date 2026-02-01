@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Utensils, X, ChefHat } from "lucide-react";
+import { Utensils, X, ChefHat, Clock } from "lucide-react";
 import { OrnateCard } from "./ui/premium-components";
 
 interface MenuModalProps {
@@ -11,27 +11,83 @@ interface MenuModalProps {
     thaalCount: number;
     halls: string[];
     hallCounts: any;
+    occasionDate: string; // ISO date string
 }
 
-export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts }: MenuModalProps) {
+// Parse time string "7:30 PM" to hours and minutes
+function parseTimeString(timeStr: string): { hours: number; minutes: number } {
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return { hours: 19, minutes: 30 }; // Default 7:30 PM
+
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2]);
+    const isPM = match[3].toUpperCase() === 'PM';
+
+    if (isPM && hours !== 12) hours += 12;
+    if (!isPM && hours === 12) hours = 0;
+
+    return { hours, minutes };
+}
+
+export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts, occasionDate }: MenuModalProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+    const [showMenu, setShowMenu] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Calculate if menu should be visible (75 min before event)
+    useEffect(() => {
+        const checkVisibility = () => {
+            const now = new Date();
+            const { hours, minutes } = parseTimeString(time);
+
+            // Create event datetime from occasionDate and time
+            const eventDate = new Date(occasionDate);
+            eventDate.setHours(hours, minutes, 0, 0);
+
+            // Menu visible time = 75 min before event
+            const menuVisibleTime = new Date(eventDate.getTime() - 75 * 60 * 1000);
+
+            const diff = menuVisibleTime.getTime() - now.getTime();
+
+            if (diff <= 0) {
+                // Menu should be visible
+                setShowMenu(true);
+                setCountdown(null);
+            } else {
+                // Show countdown
+                setShowMenu(false);
+                const totalSeconds = Math.floor(diff / 1000);
+                const h = Math.floor(totalSeconds / 3600);
+                const m = Math.floor((totalSeconds % 3600) / 60);
+                const s = totalSeconds % 60;
+                setCountdown({ hours: h, minutes: m, seconds: s });
+            }
+        };
+
+        checkVisibility();
+        const interval = setInterval(checkVisibility, 1000);
+        return () => clearInterval(interval);
+    }, [time, occasionDate]);
 
     // Parse hallCounts safely
     const hallData = hallCounts && typeof hallCounts === 'object' && !Array.isArray(hallCounts)
         ? Object.entries(hallCounts)
         : halls.map(h => [h, "-"]); // Fallback if no specific counts
 
+    // Format countdown number with leading zero
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
     return (
         <>
             {/* Coupon Alert Bar */}
             <div
-                onClick={() => setIsOpen(true)}
-                className="w-full max-w-3xl mx-auto px-4 sm:px-0 cursor-pointer relative z-30"
+                onClick={() => showMenu && setIsOpen(true)}
+                className={`w-full max-w-3xl mx-auto px-4 sm:px-0 relative z-30 ${showMenu ? 'cursor-pointer' : ''}`}
             >
                 <div className="bg-gradient-to-r from-primary-dark via-primary to-primary-dark text-white py-3 px-6 rounded-b-2xl shadow-md border-x border-b border-gold/30 flex items-center justify-between group hover:shadow-lg hover:shadow-gold/10 transition-all">
                     <div className="flex items-center gap-4">
@@ -39,17 +95,30 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts }: 
                             <Utensils className="w-4 h-4 text-gold" />
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gold font-bold mb-0 leading-none">Today's Menu</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gold font-bold mb-0 leading-none">Today's Event</p>
                             <p className="font-bold text-lg leading-tight text-gold group-hover:text-gold-light transition-colors">
                                 {title}
                             </p>
                         </div>
                     </div>
 
-                    <div className="hidden sm:flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full border border-white/10 group-hover:bg-black/30 transition-colors">
-                        <span className="text-[10px] font-bold tracking-wide uppercase">View</span>
-                        <ChefHat className="w-3 h-3 text-gold" />
-                    </div>
+                    {showMenu ? (
+                        <div className="hidden sm:flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full border border-white/10 group-hover:bg-black/30 transition-colors">
+                            <span className="text-[10px] font-bold tracking-wide uppercase">View</span>
+                            <ChefHat className="w-3 h-3 text-gold" />
+                        </div>
+                    ) : countdown && (
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gold animate-pulse" />
+                            <div className="flex items-center gap-1 text-cream font-mono text-sm font-bold">
+                                <span className="bg-black/30 px-2 py-1 rounded">{pad(countdown.hours)}</span>
+                                <span className="text-gold">:</span>
+                                <span className="bg-black/30 px-2 py-1 rounded">{pad(countdown.minutes)}</span>
+                                <span className="text-gold">:</span>
+                                <span className="bg-black/30 px-2 py-1 rounded">{pad(countdown.seconds)}</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -96,7 +165,6 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts }: 
                                     </div>
                                 </div>
 
-                                {/* Hall Allocation */}
                                 {/* Hall Allocation */}
                                 <div className="bg-primary-dark text-cream border-t border-gold/20 relative overflow-hidden">
                                     <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" />
