@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/db";
 import { MenuModal } from "./MenuModal";
+import { formatInTimeZone } from "date-fns-tz";
 
 export async function MenuAlert() {
     // Get start and end of today in local time (serving logic)
-    const now = new Date();
+    const todayIst = formatInTimeZone(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+    const now = new Date(todayIst);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
