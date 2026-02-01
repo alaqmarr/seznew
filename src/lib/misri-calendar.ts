@@ -35,7 +35,7 @@ export async function getMisriDate(date: Date): Promise<MisriDate> {
   try {
     const response = await fetch(
       `https://hijricalendar.alaqmar.dev/api/hijri?date=${dateStr}`,
-      { next: { revalidate: 86400 } }, // Cache for 24 hours
+      { cache: "no-store" },
     );
 
     if (!response.ok) {

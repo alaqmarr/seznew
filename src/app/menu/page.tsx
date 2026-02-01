@@ -1,14 +1,21 @@
 import { prisma } from "@/lib/db";
 import { OrnateCard, OrnateHeading } from "@/components/ui/premium-components";
-import { Utensils, Calendar, Clock, MapPin } from "lucide-react";
+import { Utensils, Calendar, Clock, MapPin, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
-import { GoldenButton } from "@/components/ui/premium-components"; // Assuming needed or general ui
+import { GoldenButton } from "@/components/ui/premium-components";
 import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { ThaalCountDrawer } from "./ThaalCountDrawer";
 
 export const dynamic = 'force-dynamic';
 
 export default async function MenuPage() {
+    const session = await getServerSession(authOptions);
+    const role = (session?.user as any)?.role;
+    const userId = (session?.user as any)?.id;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -32,10 +39,35 @@ export default async function MenuPage() {
             occasionDate: true,
             occasionTime: true,
             thaalCount: true,
+            totalThaalsDone: true,
             hall: true,
             hallCounts: true
         }
     });
+
+    // Check if user has access to update menu module
+    let canShowDrawer = false;
+    let canEdit = false;
+
+    if (session?.user) {
+        if (role === "ADMIN") {
+            canShowDrawer = true;
+            canEdit = true; // ADMIN can always edit
+        } else if (role === "ADMIN_CUSTOM") {
+            // Check module access
+            const hasModuleAccess = await prisma.userModuleAccess.findFirst({
+                where: {
+                    userId,
+                    module: { id: "update-thaal-count-sezsecorg" }
+                }
+            });
+            if (hasModuleAccess) {
+                canShowDrawer = true;
+                // Can only edit if not already set
+                canEdit = event?.totalThaalsDone === null;
+            }
+        }
+    }
 
     if (!event) {
         return (
@@ -67,7 +99,6 @@ export default async function MenuPage() {
 
                 <OrnateCard className="overflow-hidden border-gold/30 shadow-2xl">
                     {/* Header */}
-                    {/* 1. Header Section: Title & Stats */}
                     <div className="bg-primary-dark p-8 md:p-12 text-center relative overflow-hidden text-cream">
                         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" />
 
@@ -80,9 +111,8 @@ export default async function MenuPage() {
                                 {event.description || event.name}
                             </h1>
 
-                            {/* Added Stats Section - Thaal Count & Halls */}
-                            {/* Added Stats Section - Thaal Count & Halls */}
-                            <div className="grid grid-cols-2 gap-6 mt-8 border-t border-white/10 pt-8 w-full max-w-lg mx-auto">
+                            {/* Stats Section - Always Centered */}
+                            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 mt-8 border-t border-white/10 pt-8">
                                 <div className="flex flex-col items-center gap-1">
                                     <Clock className="w-5 h-5 text-gold/80" />
                                     <span className="text-lg font-bold text-cream">{event.occasionTime}</span>
@@ -91,13 +121,40 @@ export default async function MenuPage() {
                                 <div className="flex flex-col items-center gap-1">
                                     <Utensils className="w-5 h-5 text-gold/80" />
                                     <span className="text-lg font-bold text-cream">{event.thaalCount}</span>
-                                    <span className="text-[10px] uppercase opacity-60 tracking-wider">Total Thaals</span>
+                                    <span className="text-[10px] uppercase opacity-60 tracking-wider">Expected Thaals</span>
                                 </div>
                             </div>
+
+                            {/* Prominent Thaals Done Display */}
+                            {event.totalThaalsDone !== null && (
+                                <div className="mt-8 w-full max-w-sm mx-auto">
+                                    <div className="bg-emerald-500/20 border-2 border-emerald-400/50 rounded-xl p-6 text-center backdrop-blur-sm">
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                            <CheckCircle className="w-6 h-6 text-emerald-400" />
+                                            <span className="text-sm font-bold text-emerald-400 uppercase tracking-wide">Thaals Served</span>
+                                        </div>
+                                        <span className="text-5xl font-bold text-emerald-400 block">
+                                            {event.totalThaalsDone}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Admin Drawer Button */}
+                            {canShowDrawer && (
+                                <div className="mt-6">
+                                    <ThaalCountDrawer
+                                        eventId={event.id}
+                                        currentValue={event.totalThaalsDone}
+                                        expectedThaals={event.thaalCount}
+                                        canEdit={canEdit}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* 2. Menu Section */}
+                    {/* Menu Section */}
                     <div className="p-8 md:p-12 bg-white text-center">
                         <div className="max-w-xl mx-auto space-y-8">
                             <div className="space-y-2">
@@ -119,8 +176,7 @@ export default async function MenuPage() {
                         </div>
                     </div>
 
-                    {/* 3. Hall Allocation Section */}
-                    {/* 3. Hall Allocation Section */}
+                    {/* Hall Allocation Section */}
                     <div className="bg-primary-dark relative overflow-hidden text-cream border-t border-gold/20">
                         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" />
 

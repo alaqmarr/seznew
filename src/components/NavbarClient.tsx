@@ -2,15 +2,24 @@
 
 import Link from "next/link";
 import { GoldenButton } from "./ui/premium-components";
-import { Menu, X, ChevronDown, LayoutDashboard, FileText, Users, Box, LogOut } from "lucide-react";
+import { Menu, X, ChevronDown, LayoutDashboard, FileText, Users, Box, LogOut, Settings, Shield } from "lucide-react";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 
-interface NavbarClientProps {
-    session: any; // Using any for rough typing, strictly should be Session | null
+interface ModuleInfo {
+    id: string;
+    name: string;
+    path: string | null;  // Path is optional - can be null for component-level modules
+    elementId: string | null;
+    icon: string | null;
 }
 
-export function NavbarClient({ session }: NavbarClientProps) {
+interface NavbarClientProps {
+    session: any;
+    userModules: ModuleInfo[];
+}
+
+export function NavbarClient({ session, userModules }: NavbarClientProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [showAdminMenu, setShowAdminMenu] = useState(false);
 
@@ -22,7 +31,33 @@ export function NavbarClient({ session }: NavbarClientProps) {
         { href: "/khidmat", label: "Khidmat Invitation" },
     ];
 
-    const isAdmin = session?.user?.role === "ADMIN";
+    const role = session?.user?.role;
+    const isAdmin = role === "ADMIN";
+    const isAdminCustom = role === "ADMIN_CUSTOM";
+    const hasAdminAccess = isAdmin || (isAdminCustom && userModules.length > 0);
+
+    // For ADMIN, show all default modules; for ADMIN_CUSTOM, use their granted modules
+    const adminModules: ModuleInfo[] = isAdmin ? [
+        { id: "banners", name: "Banners", path: "/admin/banners", icon: "LayoutDashboard", elementId: null },
+        { id: "blogs", name: "Blogs", path: "/admin/blogs", icon: "FileText", elementId: null },
+        { id: "khidmat", name: "Khidmat Requests", path: "/admin/khidmat", icon: "FileText", elementId: null },
+        { id: "members", name: "Members", path: "/admin/members", icon: "Users", elementId: null },
+        { id: "inventory", name: "Inventory", path: "/inventory", icon: "Box", elementId: null },
+        { id: "modules", name: "Modules", path: "/admin/modules", icon: "Settings", elementId: null },
+        { id: "manage-access", name: "Manage Access", path: "/admin/manage-access", icon: "Shield", elementId: null },
+    ] : userModules;
+
+    const getIcon = (iconName: string | null) => {
+        switch (iconName) {
+            case "LayoutDashboard": return <LayoutDashboard className="w-4 h-4" />;
+            case "FileText": return <FileText className="w-4 h-4" />;
+            case "Users": return <Users className="w-4 h-4" />;
+            case "Box": return <Box className="w-4 h-4" />;
+            case "Settings": return <Settings className="w-4 h-4" />;
+            case "Shield": return <Shield className="w-4 h-4" />;
+            default: return <FileText className="w-4 h-4" />;
+        }
+    };
 
     return (
         <header className="sticky top-0 z-50 w-full shadow-lg">
@@ -52,7 +87,7 @@ export function NavbarClient({ session }: NavbarClientProps) {
 
                 {/* 3. Right Section - CTA & Auth */}
                 <div className="hidden md:flex items-center gap-4 shrink-0 relative">
-                    {isAdmin ? (
+                    {hasAdminAccess ? (
                         <div className="relative group">
                             <button
                                 onClick={() => setShowAdminMenu(!showAdminMenu)}
@@ -64,21 +99,15 @@ export function NavbarClient({ session }: NavbarClientProps) {
                             {/* Dropdown Menu */}
                             <div className="absolute top-full right-0 mt-4 w-56 bg-white rounded-xl shadow-xl border border-gold/20 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
                                 <div className="p-2 space-y-1">
-                                    <Link href="/admin/banners" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
-                                        <LayoutDashboard className="w-4 h-4" /> Banners
-                                    </Link>
-                                    <Link href="/admin/blogs" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
-                                        <FileText className="w-4 h-4" /> Blogs
-                                    </Link>
-                                    <Link href="/admin/khidmat" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
-                                        <FileText className="w-4 h-4" /> Khidmat Requests
-                                    </Link>
-                                    <Link href="/admin/members" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
-                                        <Users className="w-4 h-4" /> Members
-                                    </Link>
-                                    <Link href="/inventory" className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg">
-                                        <Box className="w-4 h-4" /> Inventory
-                                    </Link>
+                                    {adminModules.filter(m => m.path).map((module) => (
+                                        <Link
+                                            key={module.id}
+                                            href={module.path!}
+                                            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
+                                        >
+                                            {getIcon(module.icon)} {module.name}
+                                        </Link>
+                                    ))}
                                     <div className="h-px bg-neutral-100 my-1" />
                                     <button
                                         onClick={() => signOut()}
@@ -89,6 +118,13 @@ export function NavbarClient({ session }: NavbarClientProps) {
                                 </div>
                             </div>
                         </div>
+                    ) : session ? (
+                        <button
+                            onClick={() => signOut()}
+                            className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+                        >
+                            Logout
+                        </button>
                     ) : (
                         <Link href="/login" className="text-sm font-medium hover:text-gold transition-colors whitespace-nowrap">
                             Login
@@ -122,14 +158,19 @@ export function NavbarClient({ session }: NavbarClientProps) {
                         </Link>
                     ))}
 
-                    {isAdmin && (
+                    {hasAdminAccess && (
                         <div className="pt-2 border-t border-gold/20">
                             <p className="text-sm font-bold text-gold mb-2 uppercase tracking-wide">Admin Access</p>
-                            <Link href="/admin/banners" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Banners</Link>
-                            <Link href="/admin/blogs" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Blogs</Link>
-                            <Link href="/admin/khidmat" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Khidmat Requests</Link>
-                            <Link href="/admin/members" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Members</Link>
-                            <Link href="/inventory" onClick={() => setIsOpen(false)} className="block py-2 text-white/80 hover:text-gold">Inventory</Link>
+                            {adminModules.filter(m => m.path).map((module) => (
+                                <Link
+                                    key={module.id}
+                                    href={module.path!}
+                                    onClick={() => setIsOpen(false)}
+                                    className="block py-2 text-white/80 hover:text-gold"
+                                >
+                                    {module.name}
+                                </Link>
+                            ))}
                         </div>
                     )}
 

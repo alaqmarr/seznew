@@ -131,12 +131,14 @@ export function HijriCalendar({ events }: { events: Event[] }) {
                                     {date.getDate()}
                                 </span>
                                 {hijri && (
-                                    <div className="text-right leading-none">
-                                        <span className="block text-[8px] md:text-xs font-arabic text-primary">
-                                            {hijri.dayAr || hijri.formattedAr.split(' ')[0]}
+                                    <div className="text-right leading-tight">
+                                        {/* Arabic Day Number - Always visible */}
+                                        <span className="block text-[7px] sm:text-[8px] md:text-xs font-arabic text-primary font-bold">
+                                            {hijri.dayAr}
                                         </span>
-                                        <span className="hidden md:block text-[8px] lg:text-[10px] text-neutral-mid truncate max-w-[60px]">
-                                            {hijri.monthName}
+                                        {/* Arabic Month - Abbreviated on mobile, full on desktop */}
+                                        <span className="block text-[6px] sm:text-[7px] md:text-[9px] font-arabic text-gold/80 truncate max-w-[35px] sm:max-w-[45px] md:max-w-[60px]">
+                                            {hijri.monthNameAr}
                                         </span>
                                     </div>
                                 )}

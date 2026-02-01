@@ -9,6 +9,8 @@ import { redirect } from "next/navigation";
 import { BannerForm } from "@/components/forms/BannerForm";
 import { OrnateHeading, OrnateCard } from "@/components/ui/premium-components";
 
+export const dynamic = 'force-dynamic';
+
 export default async function BannerAdminPage() {
     const session = await getServerSession(authOptions);
 

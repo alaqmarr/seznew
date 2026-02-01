@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function BlogsAdminPage() {
     const session = await getServerSession(authOptions);
 

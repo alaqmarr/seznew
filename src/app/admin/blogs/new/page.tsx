@@ -3,6 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { BlogForm } from "@/components/forms/BlogForm";
 
+export const dynamic = 'force-dynamic';
+
 export default async function NewBlogPage() {
     const session = await getServerSession(authOptions);
 
