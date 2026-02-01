@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { getMisriDate, MisriDate } from "@/lib/misri-calendar";
 import { cn } from "@/lib/utils";
-import { addDays, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { addDays, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Event {
@@ -20,15 +20,27 @@ interface CalendarDay {
     hijri: MisriDate | null;
 }
 
-// Abbreviated weekday names for mobile
+interface InitialHijriDay {
+    date: string;
+    hijri: MisriDate;
+}
+
 const WEEKDAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const WEEKDAYS_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function HijriCalendar({ events }: { events: Event[] }) {
+interface Props {
+    events: Event[];
+    initialHijriDates?: InitialHijriDay[];
+}
+
+export function HijriCalendar({ events, initialHijriDates = [] }: Props) {
     const [viewDate, setViewDate] = useState(new Date());
     const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+    // Initial month from server data (convert serialized dates)
+    const initialMonth = useMemo(() => new Date(), []);
 
     // Calculate days in view month
     const monthDays = useMemo(() => {
@@ -37,26 +49,38 @@ export function HijriCalendar({ events }: { events: Event[] }) {
         return eachDayOfInterval({ start, end });
     }, [viewDate]);
 
-    // Fetch Hijri dates for all days in the month
+    // Check if we're viewing the initial month (server data available)
+    const isInitialMonth = isSameMonth(viewDate, initialMonth);
+
+    // Initialize with server-fetched data or fetch client-side
     useEffect(() => {
-        setIsLoading(true);
-        const fetchHijriDates = async () => {
-            const daysWithHijri: CalendarDay[] = await Promise.all(
-                monthDays.map(async (day) => ({
-                    date: day,
-                    hijri: await getMisriDate(day),
-                }))
-            );
-            setCalendarDays(daysWithHijri);
-            setIsLoading(false);
-        };
-        fetchHijriDates();
-    }, [monthDays]);
+        if (isInitialMonth && initialHijriDates.length > 0) {
+            // Use server-provided data
+            const days: CalendarDay[] = initialHijriDates.map(d => ({
+                date: new Date(d.date),
+                hijri: d.hijri,
+            }));
+            setCalendarDays(days);
+        } else {
+            // Fetch for other months client-side
+            setIsLoading(true);
+            const fetchHijriDates = async () => {
+                const daysWithHijri: CalendarDay[] = await Promise.all(
+                    monthDays.map(async (day) => ({
+                        date: day,
+                        hijri: await getMisriDate(day),
+                    }))
+                );
+                setCalendarDays(daysWithHijri);
+                setIsLoading(false);
+            };
+            fetchHijriDates();
+        }
+    }, [monthDays, isInitialMonth, initialHijriDates]);
 
     const handlePrevMonth = () => setViewDate(prev => addDays(startOfMonth(prev), -1));
     const handleNextMonth = () => setViewDate(prev => addDays(endOfMonth(prev), 1));
 
-    // Get start day padding
     const startPadding = startOfMonth(viewDate).getDay();
 
     return (
@@ -132,11 +156,11 @@ export function HijriCalendar({ events }: { events: Event[] }) {
                                 </span>
                                 {hijri && (
                                     <div className="text-right leading-tight">
-                                        {/* Arabic Day Number - Always visible */}
+                                        {/* Arabic Day Number */}
                                         <span className="block text-[7px] sm:text-[8px] md:text-xs font-arabic text-primary font-bold">
                                             {hijri.dayAr}
                                         </span>
-                                        {/* Arabic Month - Abbreviated on mobile, full on desktop */}
+                                        {/* Arabic Month */}
                                         <span className="block text-[6px] sm:text-[7px] md:text-[9px] font-arabic text-gold/80 truncate max-w-[35px] sm:max-w-[45px] md:max-w-[60px]">
                                             {hijri.monthNameAr}
                                         </span>
@@ -144,16 +168,13 @@ export function HijriCalendar({ events }: { events: Event[] }) {
                                 )}
                             </div>
 
-                            {/* Events - Mobile: dots, Desktop: text */}
+                            {/* Events */}
                             {hasEvents && (
                                 <>
                                     {/* Mobile: Event dots */}
                                     <div className="md:hidden mt-auto flex justify-center gap-0.5 pb-0.5">
                                         {dayEvents.slice(0, 3).map((_, i) => (
-                                            <div
-                                                key={i}
-                                                className="w-1.5 h-1.5 rounded-full bg-primary"
-                                            />
+                                            <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary" />
                                         ))}
                                         {dayEvents.length > 3 && (
                                             <span className="text-[8px] text-primary">+{dayEvents.length - 3}</span>
@@ -182,7 +203,7 @@ export function HijriCalendar({ events }: { events: Event[] }) {
                 })}
             </div>
 
-            {/* Event Detail Popover (for mobile taps) */}
+            {/* Event Detail Popover (mobile) */}
             {selectedEvent && (
                 <div
                     className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 md:hidden"

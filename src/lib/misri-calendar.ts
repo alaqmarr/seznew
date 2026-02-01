@@ -2,26 +2,24 @@ export interface MisriDate {
   day: number;
   month: number;
   year: number;
-  monthName: string; // Kept for backward compatibility (maps to monthNameEn)
-  monthNameEn?: string;
-  monthNameAr?: string;
-  dayAr?: string;
-  yearAr?: string;
+  monthName: string;
+  monthNameEn: string;
+  monthNameAr: string;
+  dayAr: string;
+  yearAr: string;
   formattedEn: string;
   formattedAr: string;
 }
 
-// In-memory cache for Hijri dates to avoid redundant API calls
+// In-memory cache for Hijri dates
 const hijriCache = new Map<string, MisriDate>();
 
 /**
- * Fetch Hijri date from external API.
- * Uses IST date format (YYYY-MM-DD) for proper timezone handling.
+ * Fetch Hijri date from API
  * @param date - JavaScript Date object
  * @returns Promise<MisriDate>
  */
 export async function getMisriDate(date: Date): Promise<MisriDate> {
-  // Format date as YYYY-MM-DD in IST
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -35,7 +33,6 @@ export async function getMisriDate(date: Date): Promise<MisriDate> {
   try {
     const response = await fetch(
       `https://hijricalendar.alaqmar.dev/api/hijri?date=${dateStr}`,
-      { cache: "no-store" },
     );
 
     if (!response.ok) {
@@ -44,12 +41,11 @@ export async function getMisriDate(date: Date): Promise<MisriDate> {
 
     const data = await response.json();
 
-    // Map API response to MisriDate interface
     const misriDate: MisriDate = {
       day: data.day,
       month: data.month,
       year: data.year,
-      monthName: data.monthNameEn, // Backward compatibility
+      monthName: data.monthNameEn,
       monthNameEn: data.monthNameEn,
       monthNameAr: data.monthNameAr,
       dayAr: data.dayAr,
@@ -64,30 +60,30 @@ export async function getMisriDate(date: Date): Promise<MisriDate> {
     return misriDate;
   } catch (error) {
     console.error(`Failed to fetch Hijri date for ${dateStr}:`, error);
-    // Return fallback data on error
+    // Return fallback with proper Arabic fields
     return {
       day: date.getDate(),
       month: date.getMonth() + 1,
-      year: 1447, // Approximate
-      monthName: "Unknown",
-      formattedEn: `${date.getDate()} Unknown`,
-      formattedAr: `${date.getDate()}`,
+      year: 1447,
+      monthName: "",
+      monthNameEn: "",
+      monthNameAr: "",
+      dayAr: "",
+      yearAr: "",
+      formattedEn: "",
+      formattedAr: "",
     };
   }
 }
 
 /**
- * Batch fetch Hijri dates for multiple dates.
- * Useful for calendar views to load all dates at once.
- * @param dates - Array of Date objects
- * @returns Promise<Map<string, MisriDate>> - Map with date string keys
+ * Batch fetch Hijri dates for multiple dates
  */
 export async function getMisriDatesForRange(
   dates: Date[],
 ): Promise<Map<string, MisriDate>> {
   const results = new Map<string, MisriDate>();
 
-  // Fetch all dates in parallel
   const promises = dates.map(async (date) => {
     const hijri = await getMisriDate(date);
     const key = date.toISOString().split("T")[0];
