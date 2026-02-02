@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getHallModuleId } from "@/lib/utils";
+import { getHallModuleId, getTodayRangeIST } from "@/lib/utils";
 import { OrnateCard, OrnateHeading } from "@/components/ui/premium-components";
 import { Utensils, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -16,15 +16,15 @@ export default async function MenuPage() {
     const role = (session?.user as any)?.role;
     const userId = (session?.user as any)?.id;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use consistent IST time range
+    const { start } = getTodayRangeIST();
 
     // Find the nearest upcoming public event (today or future)
     const event = await prisma.event.findFirst({
         where: {
             eventType: 'PUBLIC',
             status: { not: 'CANCELLED' },
-            occasionDate: { gte: today },
+            occasionDate: { gte: start },
             menu: { not: null }
         },
         orderBy: {

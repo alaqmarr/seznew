@@ -1,18 +1,9 @@
 import { prisma } from "@/lib/db";
 import { MenuModal } from "./MenuModal";
-import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { getTodayRangeIST } from "@/lib/utils";
 
 export async function MenuAlert() {
-    const timeZone = "Asia/Kolkata";
-
-    // 1. Get the current date string in IST (e.g., "2026-02-01")
-    const todayIstString = formatInTimeZone(new Date(), timeZone, "yyyy-MM-dd");
-
-    // 2. Define the exact START and END of that day in IST, converted to UTC
-    // Start: 2026-02-01 00:00:00.000 in IST
-    const startOfDay = fromZonedTime(`${todayIstString} 00:00:00`, timeZone);
-    // End: 2026-02-01 23:59:59.999 in IST
-    const endOfDay = fromZonedTime(`${todayIstString} 23:59:59.999`, timeZone);
+    const { start: startOfDay, end: endOfDay } = getTodayRangeIST();
 
     try {
         const todaysEvent = await prisma.event.findFirst({

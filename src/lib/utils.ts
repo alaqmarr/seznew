@@ -19,3 +19,14 @@ export function slugify(text: string): string {
 export function getHallModuleId(hallName: string): string {
   return `hall-${slugify(hallName)}`;
 }
+
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+
+export function getTodayRangeIST() {
+  const timeZone = "Asia/Kolkata";
+  const todayIstString = formatInTimeZone(new Date(), timeZone, "yyyy-MM-dd");
+  return {
+    start: fromZonedTime(`${todayIstString} 00:00:00`, timeZone),
+    end: fromZonedTime(`${todayIstString} 23:59:59.999`, timeZone),
+  };
+}

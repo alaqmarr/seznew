@@ -87,16 +87,16 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts, oc
             {/* Coupon Alert Bar */}
             <div
                 onClick={() => showMenu && setIsOpen(true)}
-                className={`w-full max-w-3xl mx-auto px-4 sm:px-0 relative z-30 ${showMenu ? 'cursor-pointer' : ''}`}
+                className={`w-full max-w-3xl mx-auto px-0 sm:px-0 relative z-30 ${showMenu ? 'cursor-pointer' : ''}`}
             >
-                <div className="bg-gradient-to-r from-primary-dark via-primary to-primary-dark text-white py-3 px-6 rounded-b-2xl shadow-md border-x border-b border-gold/30 flex items-center justify-between group hover:shadow-lg hover:shadow-gold/10 transition-all">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-gold/20 p-1.5 rounded-full ring-1 ring-gold/40 group-hover:bg-gold/30 transition-colors animate-pulse">
-                            <Utensils className="w-4 h-4 text-gold" />
+                <div className="bg-gradient-to-r from-primary-dark via-primary to-primary-dark text-white py-3 px-4 sm:px-6 rounded-b-2xl shadow-md border-b border-gold/30 flex items-center justify-between group hover:shadow-lg hover:shadow-gold/10 transition-all gap-4 sm:border-x">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="bg-gold/20 p-1.5 rounded-full ring-1 ring-gold/40 group-hover:bg-gold/30 transition-colors animate-pulse shrink-0">
+                            <Utensils className="w-3 h-3 sm:w-4 sm:h-4 text-gold" />
                         </div>
-                        <div>
-                            <p className="text-[10px] uppercase tracking-widest text-gold font-bold mb-0 leading-none">Today's Event</p>
-                            <p className="font-bold text-lg leading-tight text-gold group-hover:text-gold-light transition-colors">
+                        <div className="min-w-0">
+                            <p className="text-[10px] uppercase tracking-widest text-gold font-bold mb-0 leading-none truncate">Today's Event</p>
+                            <p className="font-bold text-sm sm:text-lg leading-tight text-gold group-hover:text-gold-light transition-colors truncate">
                                 {title}
                             </p>
                         </div>
@@ -108,14 +108,14 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts, oc
                             <ChefHat className="w-3 h-3 text-gold" />
                         </div>
                     ) : countdown && (
-                        <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-gold animate-pulse" />
-                            <div className="flex items-center gap-1 text-cream font-mono text-sm font-bold">
-                                <span className="bg-black/30 px-2 py-1 rounded">{pad(countdown.hours)}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gold animate-pulse hidden xs:block" />
+                            <div className="flex items-center gap-1 text-cream font-mono text-xs sm:text-sm font-bold">
+                                <span className="bg-black/30 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded min-w-[20px] text-center">{pad(countdown.hours)}</span>
                                 <span className="text-gold">:</span>
-                                <span className="bg-black/30 px-2 py-1 rounded">{pad(countdown.minutes)}</span>
+                                <span className="bg-black/30 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded min-w-[20px] text-center">{pad(countdown.minutes)}</span>
                                 <span className="text-gold">:</span>
-                                <span className="bg-black/30 px-2 py-1 rounded">{pad(countdown.seconds)}</span>
+                                <span className="bg-black/30 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded min-w-[20px] text-center">{pad(countdown.seconds)}</span>
                             </div>
                         </div>
                     )}

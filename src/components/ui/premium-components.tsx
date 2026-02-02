@@ -47,40 +47,32 @@ export function GoldenButton({
 }
 
 // 3. Ornate Heading
-export function OrnateHeading({
-    title,
-    subtitle,
-    arabic,
-    className,
-    isDarkBg = false,
-}: {
+interface OrnateHeadingProps {
     title: string;
     subtitle?: string;
     arabic?: string;
     className?: string;
-    isDarkBg?: boolean;
-}) {
+}
+
+export function OrnateHeading({ title, subtitle, arabic, className = "" }: OrnateHeadingProps) {
     return (
-        <div className={cn("text-center space-y-3 mb-8", className)}>
+        <div className={cn("text-center space-y-4", className)}>
             {arabic && (
-                <p className={cn(
-                    "font-arabic text-3xl mb-2 drop-shadow-sm",
-                    isDarkBg ? "text-gold" : "text-primary"
-                )}>
+                <p className="font-[family-name:var(--font-arabic)] text-2xl text-gold-light/80">
                     {arabic}
                 </p>
             )}
             <h1 className={cn(
-                "text-5xl md:text-6xl font-[family-name:var(--font-lobster)] font-bold tracking-wide drop-shadow-lg py-2",
-                isDarkBg ? "text-gold" : "text-primary"
+                "font-[family-name:var(--font-lobster)] text-5xl md:text-6xl text-primary-dark drop-shadow-sm",
+                "bg-clip-text text-transparent bg-gradient-to-r from-primary-dark via-primary to-primary-dark"
             )}>
                 {title}
             </h1>
-            <div className="mx-auto w-32 h-1.5 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full" />
+            <div className="mx-auto w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full opacity-60" />
             {subtitle && (
                 <p className={cn(
                     "text-lg font-medium max-w-2xl mx-auto leading-relaxed",
-                    isDarkBg ? "text-cream/80" : "text-text-muted"
+                    "text-text-muted"
                 )}>
                     {subtitle}
                 </p>
