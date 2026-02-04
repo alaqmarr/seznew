@@ -51,7 +51,7 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
         { id: "members", name: "Members", links: [{ id: "4", path: "/admin/members", label: null }], icon: "Users" },
         { id: "users", name: "Users", links: [{ id: "8", path: "/admin/users", label: null }], icon: "User" },
         { id: "fees", name: "Fees", links: [{ id: "9", path: "/admin/fees", label: null }], icon: "CreditCard" },
-        { id: "accounts", name: "Accounts", links: [{ id: "10", path: "/accounts", label: null }], icon: "LayoutDashboard" },
+        { id: "accounts", name: "Accounts", links: [{ id: "10", path: "/admin/accounts", label: null }], icon: "LayoutDashboard" },
         { id: "inventory", name: "Inventory", links: [{ id: "5", path: "/inventory", label: null }], icon: "Box" },
         { id: "modules", name: "Modules", links: [{ id: "6", path: "/admin/modules", label: null }], icon: "Settings" },
         { id: "manage-access", name: "Manage Access", links: [{ id: "7", path: "/admin/manage-access", label: null }], icon: "Shield" },

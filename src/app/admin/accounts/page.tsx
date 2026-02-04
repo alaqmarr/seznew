@@ -21,8 +21,7 @@ export default async function AccountsPage() {
 
     // Check module access explicitly if needed, or rely on layout/middleware
     // Here we use the access control utility
-    // Assuming 'accounts-module' logic is linked to this route via 'accounts' slug or similar
-    const access = await requireAccess("/accounts"); // Assuming this is the path
+    const access = await requireAccess("/admin/accounts"); // Assuming this is the path
     if (!access.authorized) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light">
