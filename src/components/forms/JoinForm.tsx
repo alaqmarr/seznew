@@ -1,3 +1,4 @@
+"use client";
 import { submitMemberRegistration } from "@/app/actions";
 import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
