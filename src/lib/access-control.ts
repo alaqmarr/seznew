@@ -158,7 +158,7 @@ export async function getNavModules(): Promise<ModuleInfo[]> {
  */
 export async function requireAccess(
   path: string,
-): Promise<{ authorized: boolean; userId?: string }> {
+): Promise<{ authorized: boolean; userId?: string; role?: string }> {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -170,10 +170,10 @@ export async function requireAccess(
 
   // ADMIN always authorized
   if (role === "ADMIN") {
-    return { authorized: true, userId };
+    return { authorized: true, userId, role };
   }
 
   // Any role: check module access
   const hasAccess = await hasModuleAccess(userId, path);
-  return { authorized: hasAccess, userId };
+  return { authorized: hasAccess, userId, role };
 }

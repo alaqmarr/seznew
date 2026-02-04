@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { GoldenButton } from "./ui/premium-components";
-import { Menu, X, ChevronDown, LayoutDashboard, FileText, Users, Box, LogOut, Settings, Shield, User, Calendar, Image, CreditCard } from "lucide-react";
+import { Menu, X, ChevronDown, User, LogOut } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -44,34 +45,23 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
     const hasModuleAccess = isAdmin || userModules.length > 0;
 
     // For ADMIN, show all default modules; for others, use their granted modules
-    const adminModules: ModuleInfo[] = isAdmin ? [
-        { id: "banners", name: "Banners", links: [{ id: "1", path: "/admin/banners", label: null }], icon: "Image" },
-        { id: "blogs", name: "Blogs", links: [{ id: "2", path: "/admin/blogs", label: null }], icon: "FileText" },
-        { id: "khidmat", name: "Khidmat Requests", links: [{ id: "3", path: "/admin/khidmat", label: null }], icon: "FileText" },
-        { id: "members", name: "Members", links: [{ id: "4", path: "/admin/members", label: null }], icon: "Users" },
-        { id: "users", name: "Users", links: [{ id: "8", path: "/admin/users", label: null }], icon: "User" },
-        { id: "fees", name: "Fees", links: [{ id: "9", path: "/admin/fees", label: null }], icon: "CreditCard" },
-        { id: "accounts", name: "Accounts", links: [{ id: "10", path: "/admin/accounts", label: null }], icon: "LayoutDashboard" },
-        { id: "inventory", name: "Inventory", links: [{ id: "5", path: "/inventory", label: null }], icon: "Box" },
-        { id: "modules", name: "Modules", links: [{ id: "6", path: "/admin/modules", label: null }], icon: "Settings" },
-        { id: "manage-access", name: "Manage Access", links: [{ id: "7", path: "/admin/manage-access", label: null }], icon: "Shield" },
-    ] : userModules;
+    const displayModules = userModules;
 
     const getIcon = (iconName: string | null) => {
-        switch (iconName) {
-            case "LayoutDashboard": return <LayoutDashboard className="w-4 h-4" />;
-            case "FileText": return <FileText className="w-4 h-4" />;
-            case "Users": return <Users className="w-4 h-4" />;
-            case "Box": return <Box className="w-4 h-4" />;
-            case "Settings": return <Settings className="w-4 h-4" />;
-            case "Shield": return <Shield className="w-4 h-4" />;
-            case "Image": return <Image className="w-4 h-4" />;
-            case "Calendar": return <Calendar className="w-4 h-4" />;
-            case "User": return <User className="w-4 h-4" />;
-            case "CreditCard": return <CreditCard className="w-4 h-4" />;
-            default: return <FileText className="w-4 h-4" />;
+        if (!iconName) return <LucideIcons.FileText className="w-4 h-4" />;
+
+        // Dynamically access the icon from the library
+        // We cast to any because accessing by string index isn't strictly typed on the namespace import
+        const IconComponent = (LucideIcons as any)[iconName];
+
+        if (IconComponent) {
+            return <IconComponent className="w-4 h-4" />;
         }
+
+        // Fallback default
+        return <LucideIcons.FileText className="w-4 h-4" />;
     };
+
 
     // Get the primary link for a module (first link or the one without label)
     const getPrimaryLink = (module: ModuleInfo): string | null => {
@@ -129,9 +119,9 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                                         </Link>
                                     )}
 
-                                    {adminModules.length > 0 && <div className="h-px bg-neutral-100 my-1" />}
+                                    {displayModules.length > 0 && <div className="h-px bg-neutral-100 my-1" />}
 
-                                    {adminModules.map((module) => {
+                                    {displayModules.map((module) => {
                                         const primaryLink = getPrimaryLink(module);
                                         if (!primaryLink) return null;
 
@@ -260,7 +250,7 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                                             </p>
 
                                             <div className="space-y-1">
-                                                {adminModules.map((module) => {
+                                                {displayModules.map((module) => {
                                                     const primaryLink = getPrimaryLink(module);
                                                     if (!primaryLink) return null;
 
@@ -329,5 +319,6 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                 </Sheet>
             </nav>
         </header>
+
     );
 }

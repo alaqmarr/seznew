@@ -186,7 +186,8 @@ export async function recordPayment(
   mode: string,
   reference?: string,
   note?: string,
-  targetEventId?: string, // Optional: Pay specifically for an event
+  targetEventId?: string,
+  targetFeeRecordId?: string, // Explicitly target a fee record
 ) {
   try {
     // 1. Create Transaction
@@ -234,7 +235,38 @@ export async function recordPayment(
       }
     }
 
-    // 3. Fallback: Monthly Fee Allocation (if no target or remaining amount exists)
+    // 3. Target Allocation (Fee Record)
+    if (targetFeeRecordId && remainingAmount > 0) {
+      const feeRecord = await prisma.feeRecord.findUnique({
+        where: { id: targetFeeRecordId },
+      });
+
+      if (feeRecord) {
+        const due = feeRecord.amount - feeRecord.paidAmount;
+        const toPay = Math.min(remainingAmount, due);
+
+        if (toPay > 0) {
+          remainingAmount -= toPay;
+          const newPaid = feeRecord.paidAmount + toPay;
+          const newStatus = newPaid >= feeRecord.amount ? "PAID" : "PARTIAL";
+
+          await prisma.feeRecord.update({
+            where: { id: targetFeeRecordId },
+            data: { paidAmount: newPaid, status: newStatus },
+          });
+
+          await prisma.feeTransactionAllocation.create({
+            data: {
+              transactionId: transaction.id,
+              feeRecordId: targetFeeRecordId,
+              allocatedAmount: toPay,
+            },
+          });
+        }
+      }
+    }
+
+    // 4. Fallback: Monthly Fee Allocation (if no target or remaining amount exists)
     // Note: If user targeted an event, we typically stop there to avoid accidental monthly fee payment?
     // Or should excess go to monthly?
     // User requested "user can pay for these from their profiles". Usually specific.
@@ -423,6 +455,110 @@ export async function getUserTransactions(userId: string) {
     return { success: true, data: transactions };
   } catch (error) {
     console.error("Error fetching transactions:", error);
+    return { success: false, error: "Failed to fetch transactions" };
+  }
+}
+
+/**
+ * Revoke a transaction (Admin only)
+ * Reverts the payment allocations and deletes the transaction
+ */
+export async function revokeTransaction(transactionId: string) {
+  try {
+    // 1. Get transaction with allocations
+    const transaction = await prisma.feeTransaction.findUnique({
+      where: { id: transactionId },
+      include: { allocations: true },
+    });
+
+    if (!transaction) return { success: false, error: "Transaction not found" };
+
+    // 2. Revert allocations
+    for (const allocation of transaction.allocations) {
+      if (allocation.feeRecordId) {
+        const record = await prisma.feeRecord.findUnique({
+          where: { id: allocation.feeRecordId },
+        });
+
+        if (record) {
+          const newPaid = Math.max(
+            0,
+            record.paidAmount - allocation.allocatedAmount,
+          );
+          const newStatus =
+            newPaid === 0
+              ? "PENDING"
+              : newPaid >= record.amount
+                ? "PAID"
+                : "PARTIAL";
+
+          await prisma.feeRecord.update({
+            where: { id: record.id },
+            data: { paidAmount: newPaid, status: newStatus },
+          });
+        }
+      } else if (allocation.eventContributionId) {
+        const contribution = await prisma.eventContribution.findUnique({
+          where: { id: allocation.eventContributionId },
+        });
+
+        if (contribution) {
+          const newPaid = Math.max(
+            0,
+            contribution.paidAmount - allocation.allocatedAmount,
+          );
+          const newStatus =
+            newPaid === 0
+              ? "PENDING"
+              : newPaid >= contribution.amount
+                ? "PAID"
+                : "PARTIAL";
+
+          await prisma.eventContribution.update({
+            where: { id: contribution.id },
+            data: { paidAmount: newPaid, status: newStatus },
+          });
+        }
+      }
+    }
+
+    // 3. Delete transaction (Cascade deletes allocations)
+    await prisma.feeTransaction.delete({
+      where: { id: transactionId },
+    });
+
+    revalidatePath("/fees");
+    revalidatePath("/admin/fees");
+    revalidatePath("/profile");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error revoking transaction:", error);
+    return { success: false, error: "Failed to revoke transaction" };
+  }
+}
+
+/**
+ * Fetch transactions for a specific Fee Record
+ */
+export async function getFeeRecordTransactions(feeRecordId: string) {
+  try {
+    const transactions = await prisma.feeTransaction.findMany({
+      where: {
+        allocations: {
+          some: { feeRecordId },
+        },
+      },
+      orderBy: { date: "desc" },
+      include: {
+        allocations: {
+          where: { feeRecordId }, // Only get the allocation relevant to this record
+        },
+      },
+    });
+    return { success: true, data: transactions };
+  } catch (error) {
+    console.error("Error fetching record transactions:", error);
     return { success: false, error: "Failed to fetch transactions" };
   }
 }

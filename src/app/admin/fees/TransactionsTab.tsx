@@ -2,9 +2,13 @@
 
 import { OrnateCard } from "@/components/ui/premium-components";
 import { format } from "date-fns";
-import { ArrowUpRight, Search } from "lucide-react";
+import { ArrowUpRight, Search, Trash2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { revokeTransaction } from "@/app/actions/fees";
+import { Button } from "@/components/ui/button";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 interface Transaction {
     id: string;
@@ -30,12 +34,33 @@ interface Transaction {
 
 export function TransactionsTab({ transactions }: { transactions: Transaction[] }) {
     const [searchTerm, setSearchTerm] = useState("");
+    const [revokingId, setRevokingId] = useState<string | null>(null);
+    const router = useRouter();
 
     const filteredTransactions = transactions.filter(tx =>
         tx.user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (tx.user.name && tx.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (tx.reference && tx.reference.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+
+    const handleRevoke = async (id: string) => {
+        if (!confirm("Are you sure you want to revoke this transaction? This will revert the payment status.")) return;
+
+        setRevokingId(id);
+        try {
+            const result = await revokeTransaction(id);
+            if (result.success) {
+                toast.success("Transaction revoked");
+                router.refresh();
+            } else {
+                toast.error(result.error || "Failed to revoke");
+            }
+        } catch (error) {
+            toast.error("Error revoking transaction");
+        } finally {
+            setRevokingId(null);
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -60,6 +85,7 @@ export function TransactionsTab({ transactions }: { transactions: Transaction[] 
                                 <th className="px-6 py-3">Mode</th>
                                 <th className="px-6 py-3">Allocation</th>
                                 <th className="px-6 py-3">Ref/Note</th>
+                                <th className="px-6 py-3 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -104,11 +130,22 @@ export function TransactionsTab({ transactions }: { transactions: Transaction[] 
                                         {tx.reference && <div>Ref: {tx.reference}</div>}
                                         {tx.note && <div>Note: {tx.note}</div>}
                                     </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => handleRevoke(tx.id)}
+                                            disabled={revokingId === tx.id}
+                                        >
+                                            {revokingId === tx.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        </Button>
+                                    </td>
                                 </tr>
                             ))}
                             {filteredTransactions.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                                         No transactions found.
                                     </td>
                                 </tr>

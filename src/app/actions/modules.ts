@@ -20,6 +20,7 @@ export async function createModule(data: {
   links: ModuleLinkInput[];
   description?: string;
   icon?: string;
+  targetUserIts?: string[];
 }) {
   const session = await getServerSession(authOptions);
   if (!session || (session.user as any).role !== "ADMIN") {
@@ -29,22 +30,44 @@ export async function createModule(data: {
   const moduleId = slugify(data.name);
 
   try {
-    const module = await prisma.module.create({
-      data: {
-        id: moduleId,
-        name: data.name,
-        description: data.description || null,
-        icon: data.icon || null,
-        links: {
-          create: data.links.map((link, index) => ({
-            path: link.path,
-            label: link.label || null,
-            order: link.order ?? index,
-          })),
+    const module = await prisma.$transaction(async (tx) => {
+      const newModule = await tx.module.create({
+        data: {
+          id: moduleId,
+          name: data.name,
+          description: data.description || null,
+          icon: data.icon || null,
+          links: {
+            create: data.links.map((link, index) => ({
+              path: link.path,
+              label: link.label || null,
+              order: link.order ?? index,
+            })),
+          },
         },
-      },
-      include: { links: true },
+        include: { links: true },
+      });
+
+      // Handle User Assignment if ITS provided
+      if (data.targetUserIts && data.targetUserIts.length > 0) {
+        const users = await tx.user.findMany({
+          where: { its: { in: data.targetUserIts } },
+          select: { id: true },
+        });
+
+        if (users.length > 0) {
+          await tx.userModuleAccess.createMany({
+            data: users.map((u) => ({
+              userId: u.id,
+              moduleId: newModule.id,
+            })),
+          });
+        }
+      }
+
+      return newModule;
     });
+
     revalidatePath("/admin/modules");
     return { success: true, module };
   } catch (error: any) {
@@ -140,6 +163,31 @@ export async function addModuleLink(moduleId: string, link: ModuleLinkInput) {
   } catch (error) {
     console.error("Failed to add link:", error);
     return { success: false, error: "Failed to add link" };
+  }
+}
+
+export async function updateModuleLink(
+  linkId: string,
+  data: { path: string; label?: string; order?: number },
+) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    const updatedLink = await prisma.moduleLink.update({
+      where: { id: linkId },
+      data: {
+        path: data.path,
+        label: data.label || null,
+      },
+    });
+    revalidatePath("/admin/modules");
+    return { success: true, link: updatedLink };
+  } catch (error) {
+    console.error("Failed to update link:", error);
+    return { success: false, error: "Failed to update link" };
   }
 }
 
@@ -301,5 +349,48 @@ export async function createHallModule(hallName: string) {
   } catch (error) {
     console.error("Failed to create hall module:", error);
     return { success: false, error: "Failed to create hall module" };
+  }
+}
+
+// ============ Access Management Helpers ============
+
+export async function getModuleUsers(moduleId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN")
+    return { success: false, error: "Unauthorized" };
+
+  try {
+    const accesslist = await prisma.userModuleAccess.findMany({
+      where: { moduleId },
+      include: {
+        user: { select: { id: true, name: true, username: true, its: true } },
+      },
+    });
+    return { success: true, data: accesslist.map((a) => a.user) };
+  } catch (error) {
+    return { success: false, error: "Failed to fetch users" };
+  }
+}
+
+export async function searchUsers(query: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN")
+    return { success: false, error: "Unauthorized" };
+
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { username: { contains: query, mode: "insensitive" } },
+          { its: { contains: query } },
+        ],
+      },
+      take: 10,
+      select: { id: true, name: true, username: true, its: true },
+    });
+    return { success: true, data: users };
+  } catch (error) {
+    return { success: false, error: "Failed to search users" };
   }
 }

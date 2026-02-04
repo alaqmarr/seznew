@@ -55,9 +55,10 @@ export default async function AdminFeesPage({
 
                     <TabsContent value="monthly" className="space-y-6">
                         {/* Stats Cards */}
+// Update formatting in the main component
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <StatCard label="Total Due" value={`₹${totalDue.toLocaleString()}`} />
-                            <StatCard label="Collected (Month)" value={`₹${totalCollected.toLocaleString()}`} />
+                            <StatCard label="Total Due" value={`₹${totalDue.toLocaleString('en-IN')}`} />
+                            <StatCard label="Collected (Month)" value={`₹${totalCollected.toLocaleString('en-IN')}`} />
                             <StatCard label="Pending Members" value={pendingCount.toString()} />
                         </div>
 
@@ -85,9 +86,9 @@ export default async function AdminFeesPage({
 
 function StatCard({ label, value }: { label: string; value: string }) {
     return (
-        <OrnateCard className="p-6 text-center border border-gold/20 bg-white/80 backdrop-blur-sm shadow-lg">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">{label}</h3>
-            <p className="text-3xl font-serif text-primary-dark font-bold">{value}</p>
+        <OrnateCard className="p-6 text-center border border-gold/20 bg-gradient-to-br from-white to-amber-50/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</h3>
+            <p className="text-4xl font-serif text-primary-dark font-bold tracking-tight">{value}</p>
         </OrnateCard>
     );
 }

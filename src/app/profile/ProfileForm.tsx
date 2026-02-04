@@ -66,7 +66,7 @@ export function ProfileForm({ user, assignedModules = [] }: ProfileFormProps) {
         e.preventDefault();
         setIsLoading(true);
 
-        const isSensitiveUpdate = !!password || (formData.email !== user.email);
+        const isSensitiveUpdate = !!password || (formData.email !== (user.email || ""));
 
         if (isSensitiveUpdate && !otp) {
             // Need OTP
@@ -121,84 +121,64 @@ export function ProfileForm({ user, assignedModules = [] }: ProfileFormProps) {
                 </span>
             </div>
 
-            {/* Profile Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
-                            <User className="w-4 h-4" /> Full Name
-                        </label>
-                        {isEditing ? (
+            {/* Profile Content */}
+            {isEditing ? (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Basic Info Inputs */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                                <User className="w-4 h-4" /> Full Name
+                            </label>
                             <input
                                 type="text"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 outline-none"
                             />
-                        ) : (
-                            <p className="px-4 py-3 bg-neutral-50 rounded-lg text-neutral-800">
-                                {user.name || <span className="text-neutral-400 italic">Not set</span>}
-                            </p>
-                        )}
-                    </div>
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
-                            <Phone className="w-4 h-4" /> Mobile
-                        </label>
-                        {/* Mobile currently read-only in this form or editable? Assuming editable if not sensitive */}
-                        {isEditing ? (
+                        </div>
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                                <Phone className="w-4 h-4" /> Mobile
+                            </label>
                             <input
                                 type="tel"
                                 value={formData.mobile}
                                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                                 className="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 outline-none"
                             />
-                        ) : (
-                            <p className="px-4 py-3 bg-neutral-50 rounded-lg text-neutral-800">
-                                {user.mobile || <span className="text-neutral-400 italic">Not set</span>}
-                            </p>
-                        )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Secure Section: Email & Password */}
-                <div className="border border-gold/20 rounded-xl bg-gold/5 p-6 space-y-4">
-                    <h3 className="font-bold text-primary-dark flex items-center gap-2">
-                        <Lock className="w-4 h-4" /> Security Settings
-                    </h3>
+                    {/* Check Email/Password Inputs */}
+                    <div className="border border-gold/20 rounded-xl bg-gold/5 p-6 space-y-4">
+                        <h3 className="font-bold text-primary-dark flex items-center gap-2">
+                            <Lock className="w-4 h-4" /> Security Settings
+                        </h3>
 
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
-                            <Mail className="w-4 h-4" /> Email Address
-                        </label>
-                        {isEditing ? (
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                                <Mail className="w-4 h-4" /> Email Address
+                            </label>
                             <div className="space-y-2">
                                 <input
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => {
                                         setFormData({ ...formData, email: e.target.value });
-                                        // If email changes, hide OTP until re-requested
                                         if (e.target.value !== user.email) setShowOtp(false);
                                     }}
                                     placeholder="Enter legitimate email for OTP"
                                     className="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 outline-none bg-white"
                                 />
-                                {formData.email !== user.email && (
+                                {formData.email !== (user.email || "") && (
                                     <p className="text-xs text-amber-600">
                                         * Changing email requires verification code.
                                     </p>
                                 )}
                             </div>
-                        ) : (
-                            <p className="px-4 py-3 bg-white/50 border border-gold/10 rounded-lg text-neutral-800">
-                                {user.email || <span className="text-neutral-400 italic">No email linked</span>}
-                            </p>
-                        )}
-                    </div>
+                        </div>
 
-                    {isEditing && (
                         <div>
                             <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
                                 <Key className="w-4 h-4" /> New Password (Optional)
@@ -211,11 +191,9 @@ export function ProfileForm({ user, assignedModules = [] }: ProfileFormProps) {
                                 className="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 outline-none bg-white font-mono"
                             />
                         </div>
-                    )}
 
-                    {/* OTP Logic */}
-                    {isEditing && (
-                        (password || formData.email !== user.email) && (
+                        {/* OTP Logic */}
+                        {(password || formData.email !== (user.email || "")) && (
                             <div className="pt-2 animate-in fade-in slide-in-from-top-2">
                                 {!showOtp ? (
                                     <button
@@ -253,45 +231,80 @@ export function ProfileForm({ user, assignedModules = [] }: ProfileFormProps) {
                                     </div>
                                 )}
                             </div>
-                        )
-                    )}
-                </div>
+                        )}
+                    </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-3 pt-4">
-                    {isEditing ? (
-                        <>
-                            <button
-                                type="submit"
-                                disabled={isLoading || ((!!password || formData.email !== user.email) && !otp)}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Save className="w-4 h-4" />
-                                )}
-                                Save Changes
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsEditing(false);
-                                    setShowOtp(false);
-                                    setOtp("");
-                                    setPassword("");
-                                    setFormData({
-                                        name: user.name || "",
-                                        email: user.email || "",
-                                        mobile: user.mobile || "",
-                                    });
-                                }}
-                                className="px-6 py-2.5 text-neutral-600 font-medium rounded-lg hover:bg-neutral-100 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </>
-                    ) : (
+                    {/* Edit Mode Actions */}
+                    <div className="flex items-center gap-3 pt-4">
+                        <button
+                            type="submit"
+                            disabled={isLoading || ((!!password || formData.email !== (user.email || "")) && !otp)}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Save className="w-4 h-4" />
+                            )}
+                            Save Changes
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsEditing(false);
+                                setShowOtp(false);
+                                setOtp("");
+                                setPassword("");
+                                setFormData({
+                                    name: user.name || "",
+                                    email: user.email || "",
+                                    mobile: user.mobile || "",
+                                });
+                            }}
+                            className="px-6 py-2.5 text-neutral-600 font-medium rounded-lg hover:bg-neutral-100 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            ) : (
+                <div className="space-y-6">
+                    {/* View Mode */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                                <User className="w-4 h-4" /> Full Name
+                            </label>
+                            <p className="px-4 py-3 bg-neutral-50 rounded-lg text-neutral-800 border border-transparent">
+                                {user.name || <span className="text-neutral-400 italic">Not set</span>}
+                            </p>
+                        </div>
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                                <Phone className="w-4 h-4" /> Mobile
+                            </label>
+                            <p className="px-4 py-3 bg-neutral-50 rounded-lg text-neutral-800 border border-transparent">
+                                {user.mobile || <span className="text-neutral-400 italic">Not set</span>}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="border border-gold/20 rounded-xl bg-gold/5 p-6">
+                        <h3 className="font-bold text-primary-dark flex items-center gap-2 mb-4">
+                            <Lock className="w-4 h-4" /> Security Settings
+                        </h3>
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                                <Mail className="w-4 h-4" /> Email Address
+                            </label>
+                            <p className="px-4 py-3 bg-white/50 border border-gold/10 rounded-lg text-neutral-800">
+                                {user.email || <span className="text-neutral-400 italic">No email linked</span>}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* View Mode Actions */}
+                    <div className="pt-4">
                         <button
                             type="button"
                             onClick={() => setIsEditing(true)}
@@ -300,9 +313,9 @@ export function ProfileForm({ user, assignedModules = [] }: ProfileFormProps) {
                             <Edit3 className="w-4 h-4" />
                             Edit Profile
                         </button>
-                    )}
+                    </div>
                 </div>
-            </form>
+            )}
 
             {/* Assigned Modules Section */}
             {assignedModules && assignedModules.length > 0 && (

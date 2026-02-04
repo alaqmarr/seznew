@@ -30,7 +30,7 @@ export default function LoginForm() {
                 toast.error("Invalid credentials");
             } else {
                 toast.success("Logged in successfully");
-                router.push("/");
+                router.push("/profile");
                 router.refresh();
             }
         } catch (error) {

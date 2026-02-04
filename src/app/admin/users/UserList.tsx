@@ -13,6 +13,7 @@ interface User {
     mobile: string | null;
     role: string;
     createdAt: Date;
+    its: string | null;
 }
 
 const ROLES = ["USER", "STAFF", "WATCHER", "MANAGER", "ADMIN_CUSTOM", "ADMIN"] as const;
@@ -29,6 +30,14 @@ const roleColors: Record<string, string> = {
 export function UserList({ users, currentUserId }: { users: User[]; currentUserId: string }) {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
+
+    const filteredUsers = users.filter(user =>
+        (user.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        user.username.toLowerCase().includes(search.toLowerCase()) ||
+        (user.email?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (user.its?.toLowerCase() || "").includes(search.toLowerCase())
+    );
 
     const handleDelete = async (id: string, username: string) => {
         if (!confirm(`Delete user @${username}? This cannot be undone.`)) return;
@@ -54,10 +63,23 @@ export function UserList({ users, currentUserId }: { users: User[]; currentUserI
 
     return (
         <div className="overflow-x-auto">
+            <div className="p-4 border-b border-neutral-100 flex items-center gap-4 bg-neutral-50/30">
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search users by name, ITS, or email..."
+                    className="flex-1 max-w-sm px-4 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none text-sm bg-white"
+                />
+                <div className="text-xs text-neutral-400">
+                    Showing {filteredUsers.length} of {users.length} users
+                </div>
+            </div>
             <table className="w-full">
                 <thead>
                     <tr className="bg-neutral-50 border-b border-neutral-200">
                         <th className="px-6 py-3 text-left text-xs font-bold text-neutral-600 uppercase tracking-wider">User</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-neutral-600 uppercase tracking-wider">Info</th>
                         <th className="px-6 py-3 text-left text-xs font-bold text-neutral-600 uppercase tracking-wider">Contact</th>
                         <th className="px-6 py-3 text-left text-xs font-bold text-neutral-600 uppercase tracking-wider">Role</th>
                         <th className="px-6 py-3 text-left text-xs font-bold text-neutral-600 uppercase tracking-wider">Joined</th>
@@ -65,7 +87,7 @@ export function UserList({ users, currentUserId }: { users: User[]; currentUserI
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                         <tr key={user.id} className="hover:bg-gold/5 transition-colors">
                             <td className="px-6 py-4">
                                 <div className="flex flex-col">
@@ -74,6 +96,15 @@ export function UserList({ users, currentUserId }: { users: User[]; currentUserI
                                     </span>
                                     <span className="text-sm text-neutral-500 font-mono">@{user.username}</span>
                                 </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                {user.its ? (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded textxs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                        ITS: {user.its}
+                                    </span>
+                                ) : (
+                                    <span className="text-neutral-400 text-xs">-</span>
+                                )}
                             </td>
                             <td className="px-6 py-4">
                                 <div className="flex flex-col text-sm">
@@ -90,6 +121,7 @@ export function UserList({ users, currentUserId }: { users: User[]; currentUserI
                                     )}
                                 </div>
                             </td>
+                            {/* Rest of columns */}
                             <td className="px-6 py-4">
                                 {user.id === currentUserId ? (
                                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${roleColors[user.role]}`}>

@@ -37,6 +37,7 @@ export default async function UsersAdminPage() {
             mobile: true,
             role: true,
             createdAt: true,
+            its: true,
         },
     });
 

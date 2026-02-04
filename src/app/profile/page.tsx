@@ -9,6 +9,7 @@ import { FeeList } from "@/app/fees/FeeList";
 import { TransactionHistory } from "@/app/fees/TransactionHistory";
 import { UnifiedPaymentDrawer } from "@/app/fees/UnifiedPaymentDrawer";
 import { EventContributionList } from "@/app/fees/EventContributionList";
+import { ProfileTabs } from "./ProfileTabs";
 
 export const dynamic = 'force-dynamic';
 
@@ -59,45 +60,15 @@ export default async function ProfilePage() {
 
     return (
         <div className="min-h-screen py-20 px-4 bg-background-light">
-            <div className="max-w-2xl mx-auto space-y-8">
-                <OrnateHeading
-                    title="My Profile"
-                    arabic="الملف الشخصي"
-                />
-
-                <OrnateCard className="p-8 border border-gold/20 shadow-2xl bg-white/90">
-                    <ProfileForm user={user} assignedModules={userModules.map(m => m.module)} />
-                </OrnateCard>
-
-                {/* Divider */}
-                <div className="flex items-center gap-4 py-4">
-                    <div className="h-px bg-gold/20 flex-1" />
-                    <span className="font-serif text-xl text-primary-dark font-bold">Contributions</span>
-                    <div className="h-px bg-gold/20 flex-1" />
-                </div>
-
-                {/* Fee Section */}
-                <div className="space-y-8">
-                    <div className="space-y-4">
-                        <UnifiedPaymentDrawer
-                            pendingFees={pendingFees}
-                            pendingEvents={pendingEvents}
-                            username={user.username}
-                        />
-                    </div>
-
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-serif font-bold text-primary-dark border-b border-gold/20 pb-2">Monthly Contributions</h3>
-                        <FeeList fees={fees} username={user.username} />
-                    </div>
-
-                    <EventContributionList events={events} username={user.username} />
-
-                    {transactions && transactions.length > 0 && (
-                        <TransactionHistory transactions={transactions} />
-                    )}
-                </div>
-            </div>
+            <ProfileTabs
+                user={user}
+                userModules={userModules}
+                fees={fees}
+                transactions={transactions}
+                events={events}
+                pendingFees={pendingFees}
+                pendingEvents={pendingEvents}
+            />
         </div>
     );
 }

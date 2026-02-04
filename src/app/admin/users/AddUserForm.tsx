@@ -18,6 +18,7 @@ export function AddUserForm() {
         email: "",
         mobile: "",
         role: "USER" as typeof ROLES[number],
+        its: "",
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +42,7 @@ export function AddUserForm() {
                 email: "",
                 mobile: "",
                 role: "USER",
+                its: "",
             });
             setTimeout(() => setSuccess(false), 2000);
         } else {
@@ -63,6 +65,21 @@ export function AddUserForm() {
                         value={formData.username}
                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         placeholder="username"
+                        className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none text-sm"
+                    />
+                </div>
+
+                {/* ITS */}
+                <div>
+                    <label className="flex items-center gap-1 text-sm font-medium text-neutral-700 mb-1">
+                        <Check className="w-3.5 h-3.5" />
+                        ITS Number
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.its}
+                        onChange={(e) => setFormData({ ...formData, its: e.target.value })}
+                        placeholder="12345678"
                         className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none text-sm"
                     />
                 </div>
