@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function getAllFloors() {
   try {
@@ -25,6 +27,11 @@ export async function getAllFloors() {
 }
 
 export async function createFloor(name: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return { success: false, error: "Unauthorized" };
+  }
+
   try {
     const floor = await prisma.floorConfig.create({
       data: { name },

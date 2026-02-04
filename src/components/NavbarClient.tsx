@@ -41,8 +41,8 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
     const role = session?.user?.role;
     const isAdmin = role === "ADMIN";
 
-    // Any logged-in user with modules gets access panel
-    const hasModuleAccess = isAdmin || userModules.length > 0;
+    // Any logged-in user gets access panel (to see My Team, Contributions, etc.)
+    const hasModuleAccess = !!session?.user;
 
     // For ADMIN, show all default modules; for others, use their granted modules
     const displayModules = userModules;

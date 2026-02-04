@@ -33,9 +33,14 @@ export default async function FloorsPage() {
     const floorsResult = await getAllFloors();
     let floors = floorsResult.success && floorsResult.data ? floorsResult.data : [];
 
-    // If not Admin, filter floors to ONLY show their assigned floor
-    if (effectiveRole !== "ADMIN" && floorRoleInfo?.floorId) {
-        floors = floors.filter(f => f.id === floorRoleInfo.floorId);
+    // If not Admin, strictly filter floors
+    if (effectiveRole !== "ADMIN") {
+        if (floorRoleInfo?.floorId) {
+            floors = floors.filter(f => f.id === floorRoleInfo.floorId);
+        } else {
+            // User has access to the page but is not assigned to any floor
+            floors = [];
+        }
     }
 
     return (

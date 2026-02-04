@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getUserAttendance } from "@/app/actions/attendance";
-import { OrnateHeading } from "@/components/ui/premium-components";
+import { OrnateHeading, OrnateCard } from "@/components/ui/premium-components";
 import { AttendanceCalendar } from "@/app/profile/AttendanceCalendar";
 import { CalendarCheck, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -24,26 +24,46 @@ export default async function MyAttendanceHistoryPage() {
         : [];
 
     return (
-        <div className="min-h-screen py-12 px-4 bg-background-light mt-12">
-            <div className="max-w-4xl mx-auto space-y-8">
-                <div className="flex items-center gap-4">
-                    <Link href="/profile" className="p-2 rounded-full hover:bg-black/5 transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <div className="min-h-screen py-20 px-4 md:px-8 mt-12 bg-background-light flex justify-center">
+            <div className="w-full max-w-5xl space-y-8">
+
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative">
+                    <Link
+                        href="/profile"
+                        className="absolute left-0 top-0 md:relative p-3 rounded-full bg-white/50 hover:bg-gold/10 text-neutral-600 hover:text-primary-dark border border-transparent hover:border-gold/30 transition-all shadow-sm group"
+                    >
+                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     </Link>
-                    <OrnateHeading
-                        title="My Attendance"
-                        subtitle="Your presence capability"
-                        className="mb-0"
-                    />
+
+                    <div className="w-full">
+                        <OrnateHeading
+                            arabic="سجل الحضور"
+                            title="My Attendance"
+                            subtitle="Track your presence and commitment"
+                        />
+                    </div>
+
+                    {/* Spacer for centering logic on desktop */}
+                    <div className="w-12 hidden md:block" />
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gold/10">
-                    <div className="flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
-                        <CalendarCheck className="w-5 h-5 text-gold" />
-                        <h3 className="text-lg font-serif font-bold text-primary-dark">Attendance Calendar</h3>
+                {/* Main Content Card */}
+                <OrnateCard className="p-6 md:p-10 min-h-[600px]">
+                    <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gold/10">
+                        <div className="p-2 bg-gold/10 rounded-lg">
+                            <CalendarCheck className="w-6 h-6 text-gold" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-serif font-bold text-primary-dark">Monthly Overview</h3>
+                            <p className="text-xs text-neutral-500 uppercase tracking-widest">Attendance Records</p>
+                        </div>
                     </div>
-                    <AttendanceCalendar history={attendanceHistory} />
-                </div>
+
+                    <div className="mt-6">
+                        <AttendanceCalendar history={attendanceHistory} />
+                    </div>
+                </OrnateCard>
             </div>
         </div>
     );

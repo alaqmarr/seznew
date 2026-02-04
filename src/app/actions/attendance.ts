@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 // Fetch today's/upcoming public events to clone
 export async function getCloneableEvents() {
@@ -255,9 +257,72 @@ export async function getEventAttendees(eventId: string) {
       markedAt: record.timestamp,
     }));
 
+    // ... existing code ...
     return { success: true, event, attendees: formattedAttendees };
   } catch (error) {
     console.error("Error fetching event attendees:", error);
     return { success: false, error: "Failed to fetch attendees" };
+  }
+}
+
+export async function getAllAttendanceEvents() {
+  try {
+    const clones = await prisma.attendanceEventClone.findMany({
+      include: {
+        event: true,
+      },
+      orderBy: { startTime: "desc" },
+    });
+
+    const counts = await prisma.attendanceRecord.groupBy({
+      by: ["eventId"],
+      _count: { userId: true },
+    });
+
+    const countMap = new Map(counts.map((c) => [c.eventId, c._count.userId]));
+
+    const data = clones.map((clone) => ({
+      id: clone.event.id,
+      name: clone.event.name,
+      date: clone.event.occasionDate,
+      startTime: clone.startTime,
+      endTime: clone.endTime,
+      isActive: clone.isActive,
+      attendeeCount: countMap.get(clone.eventId) || 0,
+    }));
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error fetching master attendance events:", error);
+    return { success: false, error: "Failed to fetch events" };
+  }
+}
+
+export async function deleteMasterEvent(eventId: string) {
+  const session = await getServerSession(authOptions);
+  if ((session?.user as any)?.role !== "ADMIN") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.attendanceRecord.deleteMany({
+        where: { eventId },
+      });
+
+      await tx.attendanceEventClone.deleteMany({
+        where: { eventId },
+      });
+
+      await tx.event.delete({
+        where: { id: eventId },
+      });
+    });
+
+    revalidatePath("/admin/attendance-details");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting master event:", error);
+    return { success: false, error: "Failed to delete event" };
   }
 }

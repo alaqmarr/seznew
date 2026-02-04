@@ -696,7 +696,7 @@ export async function payUserMonths(
           payment.amount,
           mode,
           reference || `Multi-Month: Manual by ${adminName}`,
-          `Payment for ${monthName} ${payment.year}`,
+          `Payment for ${monthName} ${payment.year} (Logged by ${adminName})`,
           undefined,
           recordId,
         );

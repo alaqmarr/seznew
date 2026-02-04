@@ -58,17 +58,21 @@ export function OrnateHeading({ title, subtitle, arabic, className = "" }: Ornat
     return (
         <div className={cn("text-center space-y-4", className)}>
             {arabic && (
-                <p className="font-[family-name:var(--font-arabic)] text-2xl text-gold-light/80">
+                <p className="font-[family-name:var(--font-arabic)] text-4xl text-primary-dark/80">
                     {arabic}
                 </p>
             )}
-            <h1 className={cn(
-                "font-[family-name:var(--font-lobster)] text-5xl md:text-6xl text-primary-dark drop-shadow-sm",
-                "bg-clip-text text-transparent bg-gradient-to-r from-primary-dark via-primary to-primary-dark"
-            )}>
-                {title}
-            </h1>
-            <div className="mx-auto w-32 h-1 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full opacity-60" />
+
+            <div className="inline-flex flex-col items-center justify-center w-fit mx-auto gap-2">
+                <h1 className={cn(
+                    "font-[family-name:var(--font-lobster)] text-5xl md:text-6xl text-primary-dark drop-shadow-sm",
+                    "bg-clip-text text-transparent bg-gradient-to-r from-primary-dark via-primary to-primary-dark"
+                )}>
+                    {title}
+                </h1>
+                <div className="w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full opacity-60" />
+            </div>
+
             {subtitle && (
                 <p className={cn(
                     "text-lg font-medium max-w-2xl mx-auto leading-relaxed",

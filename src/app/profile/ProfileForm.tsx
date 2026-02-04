@@ -79,6 +79,7 @@ export function ProfileForm({ user, assignedModules = [] }: ProfileFormProps) {
             userId: user.id,
             name: formData.name,
             email: formData.email,
+            mobile: formData.mobile,
             password: password || undefined,
             otpCode: otp || undefined,
             currentEmail: user.email || undefined

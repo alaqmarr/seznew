@@ -372,10 +372,24 @@ export async function getModuleUsers(moduleId: string) {
   }
 }
 
+import { hasModuleAccess } from "@/lib/access-control";
+
 export async function searchUsers(query: string) {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "ADMIN")
+  if (!session?.user) return { success: false, error: "Unauthorized" };
+
+  const role = (session.user as any).role;
+  const userId = (session.user as any).id;
+
+  let isAuthorized = role === "ADMIN";
+  if (!isAuthorized) {
+    // Allow if user has access to floor management
+    isAuthorized = await hasModuleAccess(userId, "/admin/floors");
+  }
+
+  if (!isAuthorized) {
     return { success: false, error: "Unauthorized" };
+  }
 
   try {
     const users = await prisma.user.findMany({

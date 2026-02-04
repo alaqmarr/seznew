@@ -147,7 +147,7 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts, oc
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full border border-white/10">
-                            <span className="text-[10px] font-bold tracking-wide uppercase text-gold/80">Available Soon</span>
+                            <span className="text-[10px] font-bold tracking-wide uppercase text-gold/80">Something delicious is coming soon</span>
                         </div>
                     )}
                 </div>

@@ -129,13 +129,15 @@ export function FloorManager({ initialFloors, userRole, assignedFloorId }: Floor
                             <Layers className="w-10 h-10 text-gray-300" />
                         </div>
                         <p className="text-gray-500 font-medium">No floors configured yet.</p>
-                        <Button
-                            variant="link"
-                            className="text-gold hover:text-gold-dark"
-                            onClick={() => setIsCreateOpen(true)}
-                        >
-                            Create your first floor
-                        </Button>
+                        {userRole === "ADMIN" && (
+                            <Button
+                                variant="link"
+                                className="text-gold hover:text-gold-dark"
+                                onClick={() => setIsCreateOpen(true)}
+                            >
+                                Create your first floor
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>

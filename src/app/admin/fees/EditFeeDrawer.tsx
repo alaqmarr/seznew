@@ -200,7 +200,7 @@ export function EditFeeDrawer({
                     parseFloat(paymentAmount),
                     paymentMode,
                     paymentReference || `Manual Entry by ${adminName}`,
-                    `Manual Entry: ${monthName} ${year}`,
+                    `Manual Entry: ${monthName} ${year} (Logged by ${adminName})`,
                     undefined,
                     recordId
                 );

@@ -44,6 +44,7 @@ interface UpdateProfileParams {
   userId: string;
   name?: string;
   email?: string;
+  mobile?: string;
   password?: string;
   otpCode?: string;
   currentEmail?: string;
@@ -55,10 +56,11 @@ export async function updateUserProfile(params: UpdateProfileParams) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const { userId, name, email, password, otpCode } = params;
+  const { userId, name, email, mobile, password, otpCode } = params;
   const updateData: any = {};
 
   if (name) updateData.name = name;
+  if (mobile) updateData.mobile = mobile;
 
   // Handle Sensitive Updates (Password or Email)
   if (password || (email && email !== (session.user as any).email)) {
