@@ -107,8 +107,8 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                             </button>
 
                             {/* Dropdown Menu */}
-                            <div className="absolute top-full right-0 mt-4 w-64 bg-white rounded-xl shadow-xl border border-gold/20 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
-                                <div className="p-2 space-y-1">
+                            <div className="absolute top-full right-0 mt-4 w-72 bg-white rounded-xl shadow-xl border border-gold/20 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
+                                <div className="max-h-[75vh] overflow-y-auto p-2 space-y-1 custom-scrollbar">
                                     {/* Profile link for all logged-in users */}
                                     {session && (
                                         <Link
@@ -117,6 +117,36 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                                         >
                                             <User className="w-4 h-4" /> My Profile
                                         </Link>
+                                    )}
+
+                                    {/* Hardcoded New Feature Links (Accessible to all logged in users) */}
+                                    {session && (
+                                        <>
+                                            <Link
+                                                href="/admin/team"
+                                                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
+                                            >
+                                                <LucideIcons.Users className="w-4 h-4" /> My Team
+                                            </Link>
+                                            <Link
+                                                href="/admin/my-attendance-history"
+                                                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
+                                            >
+                                                <LucideIcons.CalendarCheck className="w-4 h-4" /> My Attendance
+                                            </Link>
+                                            <Link
+                                                href="/admin/contributions"
+                                                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
+                                            >
+                                                <LucideIcons.Wallet className="w-4 h-4" /> Contributions
+                                            </Link>
+                                            <Link
+                                                href="/admin/contribution-history"
+                                                className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-gold/10 hover:text-primary-dark rounded-lg"
+                                            >
+                                                <LucideIcons.History className="w-4 h-4" /> Transactions
+                                            </Link>
+                                        </>
                                     )}
 
                                     {displayModules.length > 0 && <div className="h-px bg-neutral-100 my-1" />}
@@ -241,6 +271,39 @@ export function NavbarClient({ session, userModules }: NavbarClientProps) {
                                         >
                                             <User className="w-5 h-5" /> My Profile
                                         </Link>
+                                    )}
+
+                                    {session && (
+                                        <div className="pl-4 space-y-3 border-l border-gold/10 ml-2">
+                                            <Link
+                                                href="/admin/team"
+                                                onClick={() => setIsOpen(false)}
+                                                className="block text-base font-medium text-white/80 hover:text-gold transition-colors"
+                                            >
+                                                My Team
+                                            </Link>
+                                            <Link
+                                                href="/admin/my-attendance-history"
+                                                onClick={() => setIsOpen(false)}
+                                                className="block text-base font-medium text-white/80 hover:text-gold transition-colors"
+                                            >
+                                                My Attendance
+                                            </Link>
+                                            <Link
+                                                href="/admin/contributions"
+                                                onClick={() => setIsOpen(false)}
+                                                className="block text-base font-medium text-white/80 hover:text-gold transition-colors"
+                                            >
+                                                Contributions
+                                            </Link>
+                                            <Link
+                                                href="/admin/contribution-history"
+                                                onClick={() => setIsOpen(false)}
+                                                className="block text-base font-medium text-white/80 hover:text-gold transition-colors"
+                                            >
+                                                Transactions
+                                            </Link>
+                                        </div>
                                     )}
 
                                     {hasModuleAccess && (

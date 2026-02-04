@@ -39,41 +39,25 @@ export default async function ProfilePage() {
         redirect("/login");
     }
 
+    // Fetch Fee & Attendance Data (Moved to separate pages)
+    // const [feesResult, transactionsResult, eventsResult, attendanceResult] = await Promise.all([
+    //     getUserFees(userId),
+    //     getUserTransactions(userId),
+    //     getUserEventContributions(userId),
+    //     getUserAttendance(userId) // New Fetch
+    // ]);
+
+    // We only need user modules now
     const userModules = await prisma.userModuleAccess.findMany({
         where: { userId },
         include: { module: true }
     });
-
-    // Fetch Fee & Attendance Data
-    const [feesResult, transactionsResult, eventsResult, attendanceResult] = await Promise.all([
-        getUserFees(userId),
-        getUserTransactions(userId),
-        getUserEventContributions(userId),
-        getUserAttendance(userId) // New Fetch
-    ]);
-
-    // Ensure we handle undefined data gracefully
-    const fees = (feesResult.success && feesResult.data) ? feesResult.data : [];
-    // @ts-ignore - Transaction type complexity
-    const transactions = (transactionsResult.success && transactionsResult.data) ? transactionsResult.data : [];
-    const events = (eventsResult.success && eventsResult.data) ? eventsResult.data : [];
-    const attendanceHistory = (attendanceResult.success && attendanceResult.data) ? attendanceResult.data : [];
-
-    // Filter pending/partial items
-    const pendingFees = fees.filter(f => f.status !== "PAID");
-    const pendingEvents = events.filter(e => e.status !== "PAID");
 
     return (
         <div className="min-h-screen py-20 px-4 bg-background-light">
             <ProfileTabs
                 user={user}
                 userModules={userModules}
-                fees={fees}
-                transactions={transactions}
-                events={events}
-                pendingFees={pendingFees}
-                pendingEvents={pendingEvents}
-                attendanceHistory={attendanceHistory}
             />
         </div>
     );

@@ -21,7 +21,13 @@ type FloorWithUsers = FloorConfig & {
     members: { id: string; name: string | null; username: string; its: string | null }[];
 };
 
-export function FloorManager({ initialFloors }: { initialFloors: FloorWithUsers[] }) {
+interface FloorManagerProps {
+    initialFloors: FloorWithUsers[];
+    userRole: string; // ADMIN, HEAD, SUBHEAD
+    assignedFloorId?: string;
+}
+
+export function FloorManager({ initialFloors, userRole, assignedFloorId }: FloorManagerProps) {
     const [floors, setFloors] = useState<FloorWithUsers[]>(initialFloors);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newFloorName, setNewFloorName] = useState("");
@@ -63,39 +69,59 @@ export function FloorManager({ initialFloors }: { initialFloors: FloorWithUsers[
                     subtitle="Configure Halls, Floors, and Teams"
                     className="md:text-left"
                 />
-                <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <DialogTrigger asChild>
-                        <GoldenButton className="flex items-center gap-2">
-                            <Plus className="w-4 h-4" />
-                            <span>Add Floor</span>
-                        </GoldenButton>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-md border-gold/20">
-                        <DialogHeader>
-                            <DialogTitle className="font-serif text-2xl text-primary-dark">Create New Floor</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-6 pt-4">
-                            <div className="space-y-2">
-                                <Label className="text-gray-600 font-medium">Floor / Hall Name</Label>
-                                <Input
-                                    placeholder="e.g. Level 1 Hall A"
-                                    value={newFloorName}
-                                    onChange={(e) => setNewFloorName(e.target.value)}
-                                    className="border-gray-200 focus:border-gold focus:ring-gold/20"
-                                />
-                            </div>
-                            <GoldenButton onClick={handleCreate} className="w-full justify-center">
-                                Create Floor
+
+                {userRole === "ADMIN" && (
+                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                        <DialogTrigger asChild>
+                            <GoldenButton className="flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                <span>Add Floor</span>
                             </GoldenButton>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-md border-gold/20">
+                            <DialogHeader>
+                                <DialogTitle className="font-serif text-2xl text-primary-dark">Create New Floor</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-6 pt-4">
+                                <div className="space-y-2">
+                                    <Label className="text-gray-600 font-medium">Floor / Hall Name</Label>
+                                    <Input
+                                        placeholder="e.g. Level 1 Hall A"
+                                        value={newFloorName}
+                                        onChange={(e) => setNewFloorName(e.target.value)}
+                                        className="border-gray-200 focus:border-gold focus:ring-gold/20"
+                                    />
+                                </div>
+                                <GoldenButton onClick={handleCreate} className="w-full justify-center">
+                                    Create Floor
+                                </GoldenButton>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
 
             <div className="grid gap-6">
-                {floors.map((floor) => (
-                    <FloorCard key={floor.id} floor={floor} onDelete={() => handleDelete(floor.id)} />
-                ))}
+                {floors.map((floor) => {
+                    // Logic for permissions:
+                    // Admin: Everything
+                    // Head: Can edit users if it's their floor. Can NOT delete floor.
+                    // Subhead: Read only.
+
+                    const isMyFloor = floor.id === assignedFloorId;
+                    const canEditUsers = userRole === "ADMIN" || (userRole === "HEAD" && isMyFloor);
+                    const canDeleteFloor = userRole === "ADMIN";
+
+                    return (
+                        <FloorCard
+                            key={floor.id}
+                            floor={floor}
+                            onDelete={() => handleDelete(floor.id)}
+                            canEditUsers={canEditUsers}
+                            canDeleteFloor={canDeleteFloor}
+                        />
+                    );
+                })}
 
                 {floors.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 opacity-70 bg-white/40 rounded-3xl border-2 border-dashed border-gray-200">
@@ -117,7 +143,12 @@ export function FloorManager({ initialFloors }: { initialFloors: FloorWithUsers[
     );
 }
 
-function FloorCard({ floor, onDelete }: { floor: FloorWithUsers; onDelete: () => void }) {
+function FloorCard({ floor, onDelete, canEditUsers, canDeleteFloor }: {
+    floor: FloorWithUsers;
+    onDelete: () => void;
+    canEditUsers: boolean;
+    canDeleteFloor: boolean;
+}) {
     const [expanded, setExpanded] = useState(false);
     const [localFloor, setLocalFloor] = useState(floor);
 
@@ -189,14 +220,16 @@ function FloorCard({ floor, onDelete }: { floor: FloorWithUsers; onDelete: () =>
                 </div>
 
                 <div onClick={(e) => e.stopPropagation()}>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onDelete}
-                        className="text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors h-10 w-10"
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </Button>
+                    {canDeleteFloor && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onDelete}
+                            className="text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors h-10 w-10"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -212,6 +245,7 @@ function FloorCard({ floor, onDelete }: { floor: FloorWithUsers; onDelete: () =>
                             colorTheme="amber"
                             badgeColor="bg-amber-100 text-amber-800 border-amber-200"
                             onUpdate={handleUserChange}
+                            canEdit={canEditUsers}
                         />
                         <UserGroup
                             title="Sub-Heads"
@@ -222,6 +256,7 @@ function FloorCard({ floor, onDelete }: { floor: FloorWithUsers; onDelete: () =>
                             colorTheme="blue"
                             badgeColor="bg-blue-100 text-blue-800 border-blue-200"
                             onUpdate={handleUserChange}
+                            canEdit={canEditUsers}
                         />
                         <UserGroup
                             title="Members"
@@ -232,6 +267,7 @@ function FloorCard({ floor, onDelete }: { floor: FloorWithUsers; onDelete: () =>
                             colorTheme="emerald"
                             badgeColor="bg-emerald-100 text-emerald-800 border-emerald-200"
                             onUpdate={handleUserChange}
+                            canEdit={canEditUsers}
                         />
                     </div>
                 </div>
@@ -248,7 +284,8 @@ function UserGroup({
     icon: Icon,
     colorTheme,
     badgeColor,
-    onUpdate
+    onUpdate,
+    canEdit
 }: {
     title: string,
     role: "HEAD" | "SUBHEAD" | "MEMBER",
@@ -257,7 +294,8 @@ function UserGroup({
     icon: any,
     colorTheme: "amber" | "blue" | "emerald",
     badgeColor: string,
-    onUpdate: (role: "HEAD" | "SUBHEAD" | "MEMBER", action: "ADD" | "REMOVE", user: any) => void
+    onUpdate: (role: "HEAD" | "SUBHEAD" | "MEMBER", action: "ADD" | "REMOVE", user: any) => void,
+    canEdit: boolean
 }) {
 
     const themeClasses = {
@@ -314,7 +352,9 @@ function UserGroup({
             </div>
 
             <div className="p-4 space-y-4 flex-1 flex flex-col">
-                <UserSearch onSelect={handleAdd} placeholder={`Add ${title}...`} />
+                {canEdit && (
+                    <UserSearch onSelect={handleAdd} placeholder={`Add ${title}...`} />
+                )}
 
                 <div className="space-y-2 flex-1 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
                     {users.map(u => (
@@ -333,14 +373,16 @@ function UserGroup({
                                     <span className="text-[10px] text-gray-400 font-mono tracking-wide">{u.its || "No ITS"}</span>
                                 </div>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-lg flex-shrink-0"
-                                onClick={() => handleRemove(u.id)}
-                            >
-                                <X className="w-3.5 h-3.5" />
-                            </Button>
+                            {canEdit && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-lg flex-shrink-0"
+                                    onClick={() => handleRemove(u.id)}
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </Button>
+                            )}
                         </div>
                     ))}
                     {users.length === 0 && (

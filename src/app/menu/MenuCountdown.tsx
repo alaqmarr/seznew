@@ -46,20 +46,31 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
             const eventDate = new Date(occasionDate);
             eventDate.setHours(hours, minutes, 0, 0);
 
+            // Countdown Start Time = 24 hours before event
+            const countdownStartTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
+
             // Menu visible time = 75 min before event
             const menuVisibleTime = new Date(eventDate.getTime() - 75 * 60 * 1000);
-            const diff = menuVisibleTime.getTime() - now.getTime();
 
-            if (diff <= 0) {
+            const timeToReveal = menuVisibleTime.getTime() - now.getTime();
+            const timeToCountdownStart = countdownStartTime.getTime() - now.getTime();
+
+            if (timeToReveal <= 0) {
+                // Menu should be visible
                 setShowMenu(true);
                 setCountdown(null);
-            } else {
+            } else if (timeToCountdownStart <= 0) {
+                // Within 24h window - Show countdown
                 setShowMenu(false);
-                const totalSeconds = Math.floor(diff / 1000);
+                const totalSeconds = Math.floor(timeToReveal / 1000);
                 const h = Math.floor(totalSeconds / 3600);
                 const m = Math.floor((totalSeconds % 3600) / 60);
                 const s = totalSeconds % 60;
                 setCountdown({ hours: h, minutes: m, seconds: s });
+            } else {
+                // More than 24h away - Hide countdown
+                setShowMenu(false);
+                setCountdown(null);
             }
         };
 
@@ -105,8 +116,8 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
                         </h1>
                     </div>
 
-                    {/* Countdown Section */}
-                    {countdown && (
+                    {/* Countdown Section or Available Soon Message */}
+                    {countdown ? (
                         <div className="mt-8 flex flex-col items-center gap-6 w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
 
                             {/* Stylish Badge */}
@@ -122,13 +133,24 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
                                 <TimeBox value={countdown.minutes} label="Minutes" />
                                 <TimeBox value={countdown.seconds} label="Seconds" />
                             </div>
+
+                            <div className="mt-4 flex items-center gap-2 text-white/40 text-xs font-mono">
+                                <Clock className="w-3 h-3" />
+                                <span>Menu becomes available 75m before event</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-8 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
+                            <div className="bg-white/5 border border-white/10 px-8 py-4 rounded-2xl backdrop-blur-sm">
+                                <span className="text-xl md:text-2xl font-serif text-gold/80 italic">
+                                    Menu Available Soon
+                                </span>
+                            </div>
+                            <p className="text-cream/40 text-sm max-w-xs text-center">
+                                The menu will be revealed 24 hours before the event starts.
+                            </p>
                         </div>
                     )}
-
-                    <div className="mt-8 flex items-center gap-2 text-white/40 text-xs font-mono">
-                        <Clock className="w-3 h-3" />
-                        <span>Menu becomes available 75m before event</span>
-                    </div>
                 </div>
             </div>
         </OrnateCard>

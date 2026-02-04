@@ -39,33 +39,60 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts, oc
         setMounted(true);
     }, []);
 
-    // Calculate if menu should be visible (75 min before event)
+    // Calculate if menu should be visible (24h before event)
     useEffect(() => {
         const checkVisibility = () => {
             const now = new Date();
             const { hours, minutes } = parseTimeString(time);
 
             // Create event datetime from occasionDate and time
+            // time is like "7:30 PM"
+            // occasionDate is ISO string. 
+            // We need to be careful mixing them.
+            // Let's assume occasionDate is correct usage date.
+
             const eventDate = new Date(occasionDate);
             eventDate.setHours(hours, minutes, 0, 0);
 
-            // Menu visible time = 75 min before event
-            const menuVisibleTime = new Date(eventDate.getTime() - 75 * 60 * 1000);
+            // Debug:
+            // console.log("Event Date:", eventDate);
+            // console.log("Now:", now);
 
-            const diff = menuVisibleTime.getTime() - now.getTime();
+            // Countdown Start Time = 24 hours before event
+            const countdownStartTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
-            if (diff <= 0) {
+            // Menu Reveal Time = 75 minutes before event (still used for reveal?) 
+            // The prompt says "countdown to only appear 24 hours before the event".
+            // So before 24h, we show generic message.
+            // Within 24h, we show countdown.
+            // After reveal time? Show menu.
+
+            // Let's align:
+            // > 24h before: Show "Available Soon" (No countdown)
+            // 24h to 75m before: Show Countdown to Reveal
+            // < 75m before: Show Menu
+
+            // Menu Reveal Time (when it actually opens) = 75 min before event
+            const revealTime = new Date(eventDate.getTime() - 75 * 60 * 1000);
+            const timeToReveal = revealTime.getTime() - now.getTime();
+            const timeToCountdownStart = countdownStartTime.getTime() - now.getTime();
+
+            if (timeToReveal <= 0) {
                 // Menu should be visible
                 setShowMenu(true);
                 setCountdown(null);
-            } else {
-                // Show countdown
+            } else if (timeToCountdownStart <= 0) {
+                // Within 24h window - Show countdown
                 setShowMenu(false);
-                const totalSeconds = Math.floor(diff / 1000);
+                const totalSeconds = Math.floor(timeToReveal / 1000);
                 const h = Math.floor(totalSeconds / 3600);
                 const m = Math.floor((totalSeconds % 3600) / 60);
                 const s = totalSeconds % 60;
                 setCountdown({ hours: h, minutes: m, seconds: s });
+            } else {
+                // More than 24h away - Hide countdown
+                setShowMenu(false);
+                setCountdown(null);
             }
         };
 
@@ -107,7 +134,7 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts, oc
                             <span className="text-[10px] font-bold tracking-wide uppercase">View</span>
                             <ChefHat className="w-3 h-3 text-gold" />
                         </div>
-                    ) : countdown && (
+                    ) : countdown ? (
                         <div className="flex items-center gap-1.5 shrink-0">
                             <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gold animate-pulse hidden xs:block" />
                             <div className="flex items-center gap-1 text-cream font-mono text-xs sm:text-sm font-bold">
@@ -117,6 +144,10 @@ export function MenuModal({ title, menu, time, thaalCount, halls, hallCounts, oc
                                 <span className="text-gold">:</span>
                                 <span className="bg-black/30 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded min-w-[20px] text-center">{pad(countdown.seconds)}</span>
                             </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full border border-white/10">
+                            <span className="text-[10px] font-bold tracking-wide uppercase text-gold/80">Available Soon</span>
                         </div>
                     )}
                 </div>

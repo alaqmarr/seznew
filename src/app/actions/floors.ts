@@ -51,6 +51,36 @@ export async function updateFloor(id: string, name: string) {
   }
 }
 
+// New Helper to check floor access for current user
+export async function getUserFloorRole(userId: string) {
+  const floor = await prisma.floorConfig.findFirst({
+    where: {
+      OR: [
+        { heads: { some: { id: userId } } },
+        { subHeads: { some: { id: userId } } },
+        { members: { some: { id: userId } } },
+      ],
+    },
+    select: {
+      id: true,
+      heads: { select: { id: true } },
+      subHeads: { select: { id: true } },
+      members: { select: { id: true } },
+    },
+  });
+
+  if (!floor) return null;
+
+  const isHead = floor.heads.some((h) => h.id === userId);
+  const isSubHead = floor.subHeads.some((s) => s.id === userId);
+  const isMember = floor.members.some((m) => m.id === userId);
+
+  return {
+    floorId: floor.id,
+    role: isHead ? "HEAD" : isSubHead ? "SUBHEAD" : "MEMBER",
+  };
+}
+
 export async function deleteFloor(id: string) {
   try {
     await prisma.floorConfig.delete({
@@ -87,6 +117,26 @@ export async function assignUserToFloor(
     }
 
     // Connect based on role
+    // Validation: Members and Subheads cannot be assigned if already in a floor
+    if (role === "MEMBER" || role === "SUBHEAD") {
+      const existingAssignment = await prisma.floorConfig.findFirst({
+        where: {
+          OR: [
+            { members: { some: { id: user.id } } },
+            { subHeads: { some: { id: user.id } } },
+          ],
+        },
+        select: { name: true },
+      });
+
+      if (existingAssignment) {
+        return {
+          success: false,
+          error: `User is already assigned to floor "${existingAssignment.name}". Please remove them first.`,
+        };
+      }
+    }
+
     if (role === "HEAD") {
       await prisma.floorConfig.update({
         where: { id: floorId },
