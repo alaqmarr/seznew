@@ -50,8 +50,8 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
             // Countdown Start Time = 24 hours before event
             const countdownStartTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
-            // Menu visible time = 75 min before event
-            const menuVisibleTime = new Date(eventDate.getTime() - 75 * 60 * 1000);
+            // Menu visible time = 30 min before event
+            const menuVisibleTime = new Date(eventDate.getTime() - 30 * 60 * 1000);
 
             const timeToReveal = menuVisibleTime.getTime() - now.getTime();
             const timeToCountdownStart = countdownStartTime.getTime() - now.getTime();
@@ -146,7 +146,7 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
 
                             <div className="mt-4 flex items-center gap-2 text-white/40 text-xs font-mono">
                                 <Clock className="w-3 h-3" />
-                                <span>Menu becomes available 75m before event</span>
+                                <span>Menu becomes available 30m before event</span>
                             </div>
                         </div>
                     ) : (
@@ -157,7 +157,7 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
                                 </span>
                             </div>
                             <p className="text-cream/40 text-sm max-w-xs text-center">
-                                The menu will be revealed 75 minutes before the event starts.
+                                The menu will be revealed 30 minutes before the event starts.
                             </p>
                         </div>
                     )}

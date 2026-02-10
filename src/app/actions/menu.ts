@@ -23,23 +23,8 @@ export async function updateEventThaalsDone(
   const userId = (session.user as any).id;
   const isAdmin = role === "ADMIN";
 
-  // 1. Initial Access Check
-  if (!isAdmin) {
-    // Check for the base permission
-    const hasBaseAccess = await prisma.userModuleAccess.findFirst({
-      where: {
-        userId,
-        module: { id: "update-thaal-count-sezsecorg" },
-      },
-    });
-
-    if (!hasBaseAccess) {
-      return {
-        success: false,
-        error: "You do not have permission to update thaal counts.",
-      };
-    }
-  }
+  // 1. Initial Access Check (Removed: We rely on per-hall permissions in the loop)
+  // Users with specific hall modules ("hall-mz") should be able to update those halls.
 
   // Optimistic Concurrency Control (OCC) Loop
   const MAX_RETRIES = 5;
