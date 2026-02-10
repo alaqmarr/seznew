@@ -25,7 +25,7 @@ export async function updateEventThaalsDone(
 
   // 1. Initial Access Check
   if (!isAdmin) {
-    // Must have the base permission to even try
+    // Check for the base permission
     const hasBaseAccess = await prisma.userModuleAccess.findFirst({
       where: {
         userId,
@@ -74,7 +74,12 @@ export async function updateEventThaalsDone(
             where: { userId, module: { id: moduleName } },
           });
 
+          console.log(
+            `[ThaalUpdate] Checking access for ${hallName} (Module: ${moduleName}): ${!!hasHallAccess}`,
+          );
+
           if (!hasHallAccess) {
+            console.error(`[ThaalUpdate] Failed access for ${hallName}`);
             return {
               success: false,
               error: `You do not have access to update ${hallName}`,

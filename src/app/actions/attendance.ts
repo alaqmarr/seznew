@@ -9,6 +9,7 @@ import { authOptions } from "@/lib/auth";
 export async function getCloneableEvents() {
   // Fetch future events or today, sorted by nearest first
   const today = new Date();
+  today.setDate(today.getDate() - 1); // Look back 1 day to allow late starts
   today.setHours(0, 0, 0, 0);
 
   const events = await prisma.event.findMany({

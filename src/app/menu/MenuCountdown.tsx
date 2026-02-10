@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Clock, Utensils } from "lucide-react";
 import { OrnateCard } from "@/components/ui/premium-components";
 
@@ -79,6 +80,15 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
         return () => clearInterval(interval);
     }, [occasionTime, occasionDate]);
 
+    // Poll for updates every minute to catch external changes
+    const router = useRouter(); // Need to import useRouter
+    useEffect(() => {
+        const interval = setInterval(() => {
+            router.refresh();
+        }, 60000); // Refresh every minute
+        return () => clearInterval(interval);
+    }, [router]);
+
     // Format Date for display (e.g., "Monday, 2nd February")
     const formattedDate = new Date(occasionDate).toLocaleDateString("en-US", {
         weekday: 'long',
@@ -92,14 +102,14 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
 
     return (
         <OrnateCard className="overflow-hidden border-gold/30 shadow-2xl relative">
-            <div className="bg-primary-dark p-8 md:p-12 text-center relative z-10 min-h-[500px] flex flex-col items-center justify-center">
+            <div className="bg-primary-dark p-6 md:p-12 text-center relative z-10 min-h-[60vh] md:min-h-[500px] flex flex-col items-center justify-center">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" />
 
                 {/* Dashed Border Decoration */}
-                <div className="absolute inset-6 border-2 border-dashed border-gold/20 rounded-xl pointer-events-none" />
+                <div className="absolute inset-4 md:inset-6 border-2 border-dashed border-gold/20 rounded-xl pointer-events-none" />
 
-                <div className="relative z-10 flex flex-col items-center gap-8 w-full max-w-2xl">
+                <div className="relative z-10 flex flex-col items-center gap-6 md:gap-8 w-full max-w-2xl">
 
                     {/* Icon */}
                     <div className="bg-gold/10 p-5 rounded-full ring-1 ring-gold/30 mb-2">

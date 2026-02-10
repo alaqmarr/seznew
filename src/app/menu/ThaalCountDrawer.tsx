@@ -25,6 +25,7 @@ interface Props {
     hallCounts: Record<string, number>;
     hallPermissions: Record<string, boolean>;
     isAdmin: boolean;
+    bypassTimer?: boolean;
 }
 
 // Parse time string "7:30 PM" to hours and minutes
@@ -51,7 +52,8 @@ export function ThaalCountDrawer({
     halls,
     hallCounts,
     hallPermissions,
-    isAdmin
+    isAdmin,
+    bypassTimer = false
 }: Props) {
     const [open, setOpen] = useState(false);
 
@@ -65,7 +67,7 @@ export function ThaalCountDrawer({
     const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
     const [isAvailable, setIsAvailable] = useState(false);
 
-    // Initialize local state from props
+    // Initialize local state from props when drawer opens
     useEffect(() => {
         if (open) {
             // Convert numbers to strings for inputs
@@ -75,11 +77,13 @@ export function ThaalCountDrawer({
             });
             setLocalHallCounts(initialCounts);
 
-            // Only set total override if it differs from sum of halls (meaning it was manually set) ??
-            // OR just set it to current total
             setLocalTotalOverride(currentTotal?.toString() || "");
         }
-    }, [open, halls, hallCounts, currentTotal]);
+        // We solely want to reset when the drawer OPENS.
+        // We exclusion hallCounts/etc from dependencies to prevent
+        // background refreshes (polling) from wiping user input while they type.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     // Calculate sum of hall counts
     const calculatedSum = useMemo(() => {
@@ -176,8 +180,8 @@ export function ThaalCountDrawer({
 
     const pad = (n: number) => n.toString().padStart(2, '0');
 
-    // Show countdown if not available yet (unless Admin)
-    if (!isAdmin && !isAvailable && countdown) {
+    // Show countdown if not available yet (unless Bypassed)
+    if (!bypassTimer && !isAvailable && countdown) {
         return (
             <div className="flex flex-col items-center gap-3 p-4 bg-black/20 rounded-xl border border-gold/20">
                 <div className="flex items-center gap-2 text-cream/80">
@@ -205,31 +209,31 @@ export function ThaalCountDrawer({
                     {currentTotal !== null ? "Edit Count" : "Enter Count"}
                 </button>
             </DrawerTrigger>
-            <DrawerContent className="h-[auto] max-h-[90vh] rounded-t-3xl">
-                <div className="mx-auto w-full max-w-lg flex flex-col h-full bg-white/60 backdrop-blur-md">
-                    <DrawerHeader className="text-center flex-shrink-0 pt-8 px-6">
-                        <DrawerTitle className="text-3xl font-serif font-bold text-primary-dark">
+            <DrawerContent className="h-[85dvh] rounded-t-3xl outline-none">
+                <div className="mx-auto w-full max-w-lg flex flex-col h-full bg-white/80 backdrop-blur-md">
+                    <DrawerHeader className="text-center flex-shrink-0 pt-6 px-4">
+                        <DrawerTitle className="text-2xl md:text-3xl font-serif font-bold text-primary-dark">
                             Update Thaals Served
                         </DrawerTitle>
-                        <DrawerDescription className="text-base text-gray-500 font-medium">
+                        <DrawerDescription className="text-sm md:text-base text-gray-500 font-medium">
                             Update counts for each hall. Total is calculated automatically.
                         </DrawerDescription>
                     </DrawerHeader>
 
-                    <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-hide">
-                        <form id="thaal-form" onSubmit={handleSubmit} className="space-y-8">
+                    <div className="flex-1 overflow-y-auto px-4 pb-6 scrollbar-hide">
+                        <form id="thaal-form" onSubmit={handleSubmit} className="space-y-6">
                             {/* Summary Cards */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-5 bg-white/80 rounded-2xl border border-gray-100 shadow-sm text-center">
-                                    <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-1">Expected</p>
-                                    <p className="text-3xl font-serif font-bold text-gray-700">{expectedThaals}</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="p-4 bg-white/80 rounded-2xl border border-gray-100 shadow-sm text-center">
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Expected</p>
+                                    <p className="text-2xl md:text-3xl font-serif font-bold text-gray-700">{expectedThaals}</p>
                                 </div>
-                                <div className="p-5 bg-gold/10 rounded-2xl border border-gold/20 shadow-sm text-center relative overflow-hidden">
+                                <div className="p-4 bg-gold/10 rounded-2xl border border-gold/20 shadow-sm text-center relative overflow-hidden">
                                     <div className="absolute top-0 right-0 p-2 opacity-10">
-                                        <Utensils className="w-12 h-12 text-gold-dark" />
+                                        <Utensils className="w-10 h-10 text-gold-dark" />
                                     </div>
-                                    <p className="text-xs text-gold-dark uppercase tracking-widest font-bold mb-1">Total Served</p>
-                                    <p className="text-3xl font-serif font-bold text-gold-dark">
+                                    <p className="text-[10px] text-gold-dark uppercase tracking-widest font-bold mb-1">Total Served</p>
+                                    <p className="text-2xl md:text-3xl font-serif font-bold text-gold-dark">
                                         {isAdmin ? (
                                             localTotalOverride || calculatedSum
                                         ) : (
@@ -245,8 +249,8 @@ export function ThaalCountDrawer({
                             </div>
 
                             {/* Hall Inputs */}
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-200 pb-2 flex items-center gap-2">
+                            <div className="space-y-3">
+                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-200 pb-2 flex items-center gap-2">
                                     <Utensils className="w-3 h-3" /> Hall Breakdown
                                 </h4>
 
@@ -255,20 +259,20 @@ export function ThaalCountDrawer({
                                         No halls assigned to this event.
                                     </p>
                                 ) : (
-                                    <div className="grid gap-3">
+                                    <div className="grid gap-2">
                                         {halls.map((hall) => {
                                             const canEdit = hallPermissions[hall];
                                             return (
-                                                <div key={hall} className={cn("flex items-center gap-4 p-4 rounded-xl border transition-all", canEdit ? "bg-white border-gray-200 shadow-sm" : "bg-gray-50 border-transparent opacity-80")}>
+                                                <div key={hall} className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all", canEdit ? "bg-white border-gray-200 shadow-sm" : "bg-gray-50 border-transparent opacity-80")}>
                                                     <div className="flex-grow">
-                                                        <label className="text-base font-bold text-gray-800 block">
+                                                        <label className="text-sm md:text-base font-bold text-gray-800 block">
                                                             {hall}
                                                         </label>
                                                         {!canEdit && (
-                                                            <span className="text-[10px] text-gray-400 italic font-medium uppercase tracking-wider">Read-only</span>
+                                                            <span className="text-[9px] text-gray-400 italic font-medium uppercase tracking-wider">Read-only</span>
                                                         )}
                                                     </div>
-                                                    <div className="w-28">
+                                                    <div className="w-24">
                                                         <input
                                                             type="number"
                                                             value={localHallCounts[hall] || ""}
@@ -276,7 +280,7 @@ export function ThaalCountDrawer({
                                                             disabled={!canEdit}
                                                             placeholder="0"
                                                             min="0"
-                                                            className={cn("w-full px-4 py-3 text-right font-mono text-lg font-bold border rounded-lg outline-none transition-all", canEdit ? "border-gray-200 focus:border-gold focus:ring-4 focus:ring-gold/10 bg-white" : "border-transparent bg-transparent text-gray-500")}
+                                                            className={cn("w-full px-3 py-2 text-right font-mono text-base md:text-lg font-bold border rounded-lg outline-none transition-all", canEdit ? "border-gray-200 focus:border-gold focus:ring-4 focus:ring-gold/10 bg-white" : "border-transparent bg-transparent text-gray-500")}
                                                         />
                                                     </div>
                                                 </div>
@@ -288,9 +292,9 @@ export function ThaalCountDrawer({
 
                             {/* Admin Total Override */}
                             {isAdmin && (
-                                <div className="pt-6 border-t border-dashed border-gray-200 space-y-4">
+                                <div className="pt-4 border-t border-dashed border-gray-200 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
+                                        <label className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
                                             <ShieldAlert className="w-3 h-3" /> Admin Override
                                         </label>
                                         <button
@@ -316,27 +320,27 @@ export function ThaalCountDrawer({
 
                             {/* Error */}
                             {error && (
-                                <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm font-medium flex items-center gap-2">
-                                    <ShieldAlert className="w-4 h-4" />
+                                <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-xs md:text-sm font-medium flex items-center gap-2 animate-in slide-in-from-bottom-2">
+                                    <ShieldAlert className="w-4 h-4 flex-shrink-0" />
                                     {error}
                                 </div>
                             )}
                         </form>
                     </div>
 
-                    <div className="p-6 border-t border-gray-100 bg-white/50 backdrop-blur-md mt-auto">
+                    <div className="p-4 border-t border-gray-100 bg-white/50 backdrop-blur-md mt-auto pb-8">
                         <button
                             type="submit"
                             form="thaal-form"
                             disabled={isLoading}
-                            className="w-full h-12 flex items-center justify-center gap-2 bg-primary-dark hover:bg-black text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-primary-dark/20 disabled:opacity-70 disabled:shadow-none hover:scale-[1.01] active:scale-[0.99]"
+                            className="w-full h-11 md:h-12 flex items-center justify-center gap-2 bg-primary-dark hover:bg-black text-white font-bold text-base md:text-lg rounded-xl transition-all shadow-lg shadow-primary-dark/20 disabled:opacity-70 disabled:shadow-none hover:scale-[1.01] active:scale-[0.99]"
                         >
                             {isLoading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : success ? (
                                 <>
                                     <Check className="w-5 h-5" />
-                                    Updated Successfully
+                                    Updated
                                 </>
                             ) : (
                                 "Save Changes"
@@ -346,7 +350,7 @@ export function ThaalCountDrawer({
                             <DrawerClose asChild>
                                 <button
                                     type="button"
-                                    className="text-gray-400 text-sm font-medium hover:text-gray-600 transition-colors"
+                                    className="text-gray-400 text-xs md:text-sm font-medium hover:text-gray-600 transition-colors"
                                 >
                                     Cancel
                                 </button>

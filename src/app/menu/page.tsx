@@ -9,7 +9,9 @@ import { authOptions } from "@/lib/auth";
 import { ThaalCountDrawer } from "./ThaalCountDrawer";
 import { MenuCountdown } from "./MenuCountdown";
 
+// Public Calendar Page
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function MenuPage() {
     const session = await getServerSession(authOptions);
@@ -64,13 +66,20 @@ export default async function MenuPage() {
             });
             const userModuleIds = new Set(userModules.map(m => m.moduleId));
 
-            // Check each hall
+            // Also check global permission
+            if (userModuleIds.has("update-thaal-count-sezsecorg")) {
+                canShowDrawer = true;
+            }
+
+            // Check each hall (if not already global admin)
             if (event?.hall) {
                 event.hall.forEach(h => {
                     const slug = getHallModuleId(h);
                     const hasAccess = userModuleIds.has(slug);
-                    hallPermissions[h] = hasAccess;
-                    if (hasAccess) canShowDrawer = true;
+                    if (hasAccess) {
+                        hallPermissions[h] = true;
+                        canShowDrawer = true;
+                    }
                 });
             }
 
@@ -171,6 +180,7 @@ export default async function MenuPage() {
                                             hallCounts={(event.hallCounts as Record<string, number>) || {}}
                                             hallPermissions={hallPermissions}
                                             isAdmin={role === "ADMIN"}
+                                            bypassTimer={canShowDrawer}
                                         />
                                     </div>
                                 )}
