@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, Utensils } from "lucide-react";
 import { OrnateCard } from "@/components/ui/premium-components";
@@ -13,9 +13,9 @@ interface MenuCountdownProps {
 }
 
 // Parse time string "7:30 PM" to hours and minutes
-function parseTimeString(timeStr: string): { hours: number; minutes: number } {
+function parseTimeString(timeStr: string): { hours: number; minutes: number } | null {
     const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (!match) return { hours: 19, minutes: 30 }; // Default 7:30 PM
+    if (!match) return null;
 
     let hours = parseInt(match[1]);
     const minutes = parseInt(match[2]);
@@ -27,7 +27,43 @@ function parseTimeString(timeStr: string): { hours: number; minutes: number } {
     return { hours, minutes };
 }
 
+/**
+ * Build the event's exact UTC timestamp from:
+ *  - occasionDate: ISO string (e.g. "2025-02-20T00:00:00.000Z") — date portion only matters
+ *  - occasionTime: "7:30 PM" style string — interpreted as IST (UTC+5:30)
+ */
+function buildEventDateIST(occasionDate: string, occasionTime: string): Date | null {
+    const parsed = parseTimeString(occasionTime);
+    if (!parsed) return null;
 
+    // Extract the calendar date in IST by interpreting the ISO string date portion
+    // occasionDate is typically stored as UTC midnight of the IST date, e.g.
+    // "2025-02-20T00:00:00.000Z" means Feb 20 in IST (since IST = UTC+5:30, 
+    // UTC midnight is already 5:30 AM IST of the same date).
+    // We need the IST year/month/day, then combine with the time.
+
+    // Get the date portion in IST
+    const dateObj = new Date(occasionDate);
+    
+    // Format the date in IST to extract year, month, day
+    const istFormatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+    const istDateStr = istFormatter.format(dateObj); // "YYYY-MM-DD"
+    const [year, month, day] = istDateStr.split('-').map(Number);
+
+    // Now build the event time as UTC by subtracting IST offset (5h30m)
+    // IST = UTC + 5:30, so UTC = IST - 5:30
+    const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+
+    // Event time in IST as a UTC timestamp
+    const eventUTC = Date.UTC(year, month - 1, day, parsed.hours, parsed.minutes, 0, 0) - IST_OFFSET_MS;
+
+    return new Date(eventUTC);
+}
 
 export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children }: MenuCountdownProps) {
     const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
@@ -39,19 +75,22 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
     }, []);
 
     useEffect(() => {
+        const eventDate = buildEventDateIST(occasionDate, occasionTime);
+
+        if (!eventDate) {
+            // If we can't parse the time, just show the menu
+            setShowMenu(true);
+            return;
+        }
+
         const checkVisibility = () => {
             const now = new Date();
-            const { hours, minutes } = parseTimeString(occasionTime);
-
-            // Create event datetime from occasionDate and time
-            const eventDate = new Date(occasionDate);
-            eventDate.setHours(hours, minutes, 0, 0);
-
-            // Countdown Start Time = 24 hours before event
-            const countdownStartTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
             // Menu visible time = 30 min before event
             const menuVisibleTime = new Date(eventDate.getTime() - 30 * 60 * 1000);
+
+            // Countdown Start Time = 24 hours before event
+            const countdownStartTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
             const timeToReveal = menuVisibleTime.getTime() - now.getTime();
             const timeToCountdownStart = countdownStartTime.getTime() - now.getTime();
@@ -61,7 +100,7 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
                 setShowMenu(true);
                 setCountdown(null);
             } else if (timeToCountdownStart <= 0) {
-                // Within 24h window - Show countdown
+                // Within 24h window — show countdown
                 setShowMenu(false);
                 const totalSeconds = Math.floor(timeToReveal / 1000);
                 const h = Math.floor(totalSeconds / 3600);
@@ -69,7 +108,7 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
                 const s = totalSeconds % 60;
                 setCountdown({ hours: h, minutes: m, seconds: s });
             } else {
-                // More than 24h away - Hide countdown
+                // More than 24h away — hide countdown
                 setShowMenu(false);
                 setCountdown(null);
             }
@@ -80,21 +119,22 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
         return () => clearInterval(interval);
     }, [occasionTime, occasionDate]);
 
-    // Poll for updates every minute to catch external changes
-    const router = useRouter(); // Need to import useRouter
+    // Poll for server updates every minute
+    const router = useRouter();
     useEffect(() => {
         const interval = setInterval(() => {
             router.refresh();
-        }, 60000); // Refresh every minute
+        }, 60000);
         return () => clearInterval(interval);
     }, [router]);
 
-    // Format Date for display (e.g., "Monday, 2nd February")
-    const formattedDate = new Date(occasionDate).toLocaleDateString("en-US", {
+    // Format Date for display in IST
+    const formattedDate = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
         weekday: 'long',
         day: 'numeric',
-        month: 'long'
-    });
+        month: 'long',
+    }).format(new Date(occasionDate));
 
     if (!mounted) return null;
 
