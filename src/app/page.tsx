@@ -3,7 +3,7 @@ import { Utensils, Building2, Moon, ClipboardList, Package, HandHeart, Activity,
 import Link from "next/link";
 import { TopBanner } from "@/components/TopBanner";
 import { MenuAlert } from "@/components/MenuAlert";
-
+export const revalidate = 0;
 const khidmats = [
   { title: "Jaman & Niyaz", icon: Utensils, description: "Serving community meals with dedication." },
   { title: "Masjid Tanzeem", icon: Building2, description: "Maintaining cleanliness and order in the Masjid." },
