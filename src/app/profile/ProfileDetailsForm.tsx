@@ -58,6 +58,22 @@ export function ProfileDetailsForm({ user }: { user: any }) {
     if (!isEditing) {
         return (
             <div className="space-y-6">
+                {/* Header row with Edit button always visible at the top */}
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+                    <div>
+                        <h3 className="text-base font-bold text-primary-dark">Personal & Community Details</h3>
+                        <p className="text-xs text-neutral-500 mt-0.5">Your profile information visible to administrators</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gold/10 hover:bg-gold/20 text-primary-dark font-bold rounded-lg border border-gold/30 transition-colors text-sm shrink-0"
+                    >
+                        <Edit3 className="w-4 h-4" />
+                        Edit Details
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
@@ -115,16 +131,6 @@ export function ProfileDetailsForm({ user }: { user: any }) {
                             {user.sports || <span className="text-neutral-400 italic">Not set</span>}
                         </p>
                     </div>
-                </div>
-                <div className="pt-4">
-                    <button
-                        type="button"
-                        onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-gold/10 hover:bg-gold/20 text-primary-dark font-bold rounded-lg border border-gold/30 transition-colors"
-                    >
-                        <Edit3 className="w-4 h-4" />
-                        Edit Details
-                    </button>
                 </div>
             </div>
         );
