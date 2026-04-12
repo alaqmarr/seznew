@@ -50,6 +50,15 @@ model User {
   name          String?
   role          Role           @default(STAFF)
   profileStatus ProfileStatus?
+  
+  // Additional Profile Details
+  dob           DateTime?
+  quranHifz     String?
+  passport      String?
+  kunSafar      String?
+  occupation    String?
+  sports        String?
+  
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 

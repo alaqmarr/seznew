@@ -103,3 +103,40 @@ export async function updateUserProfile(params: UpdateProfileParams) {
     return { success: false, error: "Failed to update profile" };
   }
 }
+
+export interface UpdateAdditionalDetailsParams {
+  userId: string;
+  dob?: Date | null;
+  quranHifz?: string | null;
+  passport?: string | null;
+  kunSafar?: string | null;
+  occupation?: string | null;
+  sports?: string | null;
+}
+
+export async function updateUserAdditionalDetails(
+  params: UpdateAdditionalDetailsParams,
+) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).id !== params.userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: params.userId },
+      data: {
+        dob: params.dob,
+        quranHifz: params.quranHifz,
+        passport: params.passport,
+        kunSafar: params.kunSafar,
+        occupation: params.occupation,
+        sports: params.sports,
+      },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Update Additional Details Error:", error);
+    return { success: false, error: "Failed to update additional details" };
+  }
+}

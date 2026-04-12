@@ -4,7 +4,7 @@ import { OrnateHeading } from "@/components/ui/premium-components";
 import { ExportCard } from "./ExportCard";
 
 export default async function ExportsPage() {
-    const { authorized } = await requireAccess("/admin"); // Using broad admin access for now
+    const { authorized } = await requireAccess("/admin/exports");
     if (!authorized) redirect("/unauthorized");
 
     const exportOptions = [
