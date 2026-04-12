@@ -4,16 +4,8 @@ import { prisma } from "@/lib/db";
 import { requireAccess } from "@/lib/access-control";
 
 export async function getExportData(type: string) {
-  const { authorized } = await requireAccess("/admin/exports"); // Ensure module exists or use generic admin check
-  // If module doesn't exist yet, we might need to rely on /admin/fees or similar, but let's assume we add it.
-  // For now, let's use a generic admin check if specific module fails, or just strict.
-  // I'll stick to a strict check but fall back to "ADMIN" role check if needed in access-control.
-  // Actually, let's assume the user has access if they are calling this.
-
-  // NOTE: For now, we will verify "ADMIN" role manually if requireAccess fails or just rely on it.
-  // Better: let's use a known path like "/admin" if "/admin/exports" isn't seeded.
-  const access = await requireAccess("/admin");
-  if (!access.authorized) return { success: false, error: "Unauthorized" };
+  const { authorized } = await requireAccess("/admin/exports");
+  if (!authorized) return { success: false, error: "Unauthorized" };
 
   try {
     let data: any[] = [];
@@ -32,17 +24,32 @@ export async function getExportData(type: string) {
             role: true,
             profileStatus: true,
             createdAt: true,
+            dob: true,
+            quranHifz: true,
+            passport: true,
+            kunSafar: true,
+            occupation: true,
+            sports: true,
             feeConfig: {
               select: { amount: true },
             },
           },
         });
-        // Flatten feeConfig
-        data = data.map((u) => ({
-          ...u,
-          monthlyFee: u.feeConfig?.amount || 0,
-          feeConfig: undefined,
-        }));
+        // Flatten feeConfig and calculate age
+        data = data.map((u) => {
+          const age = u.dob
+            ? Math.floor(
+                (Date.now() - new Date(u.dob).getTime()) /
+                  (1000 * 60 * 60 * 24 * 365.25),
+              )
+            : null;
+          return {
+            ...u,
+            age,
+            monthlyFee: u.feeConfig?.amount || 0,
+            feeConfig: undefined,
+          };
+        });
         break;
 
       case "ACCOUNTS":

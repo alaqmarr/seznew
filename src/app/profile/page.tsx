@@ -32,6 +32,14 @@ export default async function ProfilePage() {
             mobile: true,
             role: true,
             createdAt: true,
+            // Additional profile details
+            its: true,
+            dob: true,
+            quranHifz: true,
+            passport: true,
+            kunSafar: true,
+            occupation: true,
+            sports: true,
         },
     });
 
