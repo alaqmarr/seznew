@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { fetchBridgeEvents } from "@/lib/jamatevents-api";
 import { OrnateHeading, OrnateCard } from "@/components/ui/premium-components";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -8,7 +9,7 @@ import { startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { HijriCalendar } from "@/components/Calendar";
 
 // Public Calendar Page
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface CalendarDay {
     date: string; // ISO string for serialization
@@ -30,32 +31,33 @@ export default async function EventsPage() {
             const hasAccess = await prisma.userModuleAccess.findFirst({
                 where: {
                     userId,
-                    module: { id: "view-private-events-sezsecorg" }
-                }
+                    module: { id: "view-private-events-sezsecorg" },
+                },
             });
             canViewPrivate = !!hasAccess;
         }
     }
 
-    // Build event type filter
     const eventTypes: EventType[] = canViewPrivate
         ? [EventType.PUBLIC, EventType.PRIVATE]
         : [EventType.PUBLIC];
 
-    const events = await prisma.event.findMany({
-        where: {
-            eventType: { in: eventTypes },
-            status: { not: 'CANCELLED' }
-        },
-        select: {
-            id: true,
-            name: true,
-            occasionDay: true,
-            occasionDate: true,
-            description: true,
-            eventType: true,
-        }
+    const bridgeEvents = await fetchBridgeEvents({
+        types: eventTypes,
+        excludeCancelled: true,
+    }).catch((error) => {
+        console.error("Failed to fetch events from jamatevents:", error);
+        return [];
     });
+
+    const events = bridgeEvents.map((e) => ({
+        id: e.id,
+        name: e.name,
+        occasionDay: e.occasionDay,
+        occasionDate: new Date(e.occasionDate),
+        description: e.description,
+        eventType: e.eventType as EventType,
+    }));
 
     // Pre-fetch hijri dates for current month on server
     const now = new Date();

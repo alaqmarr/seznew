@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { fetchBridgeInventory } from "@/lib/jamatevents-api";
 import { OrnateCard, GoldenButton } from "@/components/ui/premium-components";
 import { Badge } from "@/components/ui/badge";
 
@@ -7,7 +7,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
     const session = await getServerSession(authOptions);
@@ -16,11 +16,16 @@ export default async function InventoryPage() {
         redirect("/login");
     }
 
-    const items = await prisma.inventoryItem.findMany({
-        orderBy: {
-            category: 'asc',
-        }
+    const items = await fetchBridgeInventory().catch((error) => {
+        console.error("Failed to fetch inventory from jamatevents:", error);
+        return [];
     });
+
+    const jamateventsUrl = (
+        process.env.NEXT_PUBLIC_JAMATEVENTS_URL ||
+        process.env.JAMATEVENTS_API_URL ||
+        "http://localhost:3000"
+    ).replace(/\/+$/, "");
 
     return (
         <div className="min-h-screen py-12 px-6 mt-12">
@@ -30,14 +35,20 @@ export default async function InventoryPage() {
                     <p className="text-neutral-500 mt-2 text-lg">Manage stock and community assets</p>
                 </div>
                 <div className="flex gap-2">
-                    <GoldenButton className="px-6 py-3 text-sm flex items-center gap-2 shadow-lg shadow-gold/20">
-                        <Plus className="w-4 h-4" /> Add Item
-                    </GoldenButton>
+                    <a
+                        href={`${jamateventsUrl}/inventory/add`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <GoldenButton className="px-6 py-3 text-sm flex items-center gap-2 shadow-lg shadow-gold/20">
+                            <Plus className="w-4 h-4" /> Add Item
+                        </GoldenButton>
+                    </a>
                 </div>
             </div>
 
             <OrnateCard className="p-0 overflow-hidden border border-gold/20 shadow-2xl bg-white/90 backdrop-blur-xl">
-                <div className="p-1">
+                <div className="p-1 overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-primary-dark/5 text-primary-dark font-bold uppercase tracking-wider text-xs border-b border-primary/10">
                             <tr>
@@ -58,7 +69,7 @@ export default async function InventoryPage() {
                                                 <Plus className="w-8 h-8 opacity-50" />
                                             </div>
                                             <p className="font-serif text-lg text-neutral-600">No items found</p>
-                                            <p className="text-sm">Start by adding a new item to the inventory.</p>
+                                            <p className="text-sm">Manage vessels and stock items on the Jamaat Events &amp; Store portal.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -93,4 +104,3 @@ export default async function InventoryPage() {
         </div>
     );
 }
-

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { getHallModuleId, getTodayRangeIST } from "@/lib/utils";
+import { fetchBridgeMenu } from "@/lib/jamatevents-api";
+import { getHallModuleId } from "@/lib/utils";
 import { OrnateCard, OrnateHeading } from "@/components/ui/premium-components";
 import { Utensils, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -9,8 +10,8 @@ import { authOptions } from "@/lib/auth";
 import { ThaalCountDrawer } from "./ThaalCountDrawer";
 import { MenuCountdown } from "./MenuCountdown";
 
-// Public Calendar Page
-export const dynamic = 'force-dynamic';
+// Public Menu Page
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function MenuPage() {
@@ -18,36 +19,13 @@ export default async function MenuPage() {
     const role = (session?.user as any)?.role;
     const userId = (session?.user as any)?.id;
 
-    // Use consistent IST time range
-    const { start } = getTodayRangeIST();
-
-    // Find the nearest upcoming public event (today or future)
-    const event = await prisma.event.findFirst({
-        where: {
-            eventType: 'PUBLIC',
-            status: { not: 'CANCELLED' },
-            occasionDate: { gte: start },
-            menu: { not: null }
-        },
-        orderBy: {
-            occasionDate: 'asc'
-        },
-        select: {
-            id: true,
-            name: true,
-            description: true,
-            occasionDay: true,
-            menu: true,
-            occasionDate: true,
-            occasionTime: true,
-            thaalCount: true,
-            totalThaalsDone: true,
-            hall: true,
-            hallCounts: true
-        }
+    // Fetch nearest upcoming public event with menu from jamatevents
+    const event = await fetchBridgeMenu("upcoming").catch((err) => {
+        console.error("Failed to fetch upcoming menu from jamatevents:", err);
+        return null;
     });
 
-    // Check permissions
+    // Check permissions in members database
     let canShowDrawer = false;
     const hallPermissions: Record<string, boolean> = {};
     let userModules: any[] = [];
@@ -56,36 +34,29 @@ export default async function MenuPage() {
         if (role === "ADMIN") {
             canShowDrawer = true;
             if (event?.hall) {
-                event.hall.forEach(h => hallPermissions[h] = true);
+                event.hall.forEach((h) => {
+                    hallPermissions[h] = true;
+                });
             }
         } else {
-            // Fetch user modules
             userModules = await prisma.userModuleAccess.findMany({
                 where: { userId },
-                include: { module: true }
+                include: { module: true },
             });
-            const userModuleIds = new Set(userModules.map(m => m.moduleId));
+            const userModuleIds = new Set(userModules.map((m) => m.moduleId));
 
-            // Also check global permission
             if (userModuleIds.has("update-thaal-count-sezsecorg")) {
                 canShowDrawer = true;
             }
 
-            // Check each hall (if not already global admin)
             if (event?.hall) {
-                event.hall.forEach(h => {
+                event.hall.forEach((h) => {
                     const slug = getHallModuleId(h);
-                    const hasAccess = userModuleIds.has(slug);
-                    if (hasAccess) {
+                    if (userModuleIds.has(slug)) {
                         hallPermissions[h] = true;
                         canShowDrawer = true;
                     }
                 });
-            }
-
-            // Also check global permission
-            if (userModuleIds.has("update-thaal-count-sezsecorg")) {
-                canShowDrawer = true;
             }
         }
     }
@@ -219,9 +190,9 @@ export default async function MenuPage() {
                                     <span className="text-right">Thaals Allocated</span>
                                 </div>
                                 <div className="divide-y divide-white/10 text-cream">
-                                    {(event.hallCounts && typeof event.hallCounts === 'object' && !Array.isArray(event.hallCounts)
+                                    {(event.hallCounts && typeof event.hallCounts === "object" && !Array.isArray(event.hallCounts)
                                         ? Object.entries(event.hallCounts)
-                                        : event.hall.map(h => [h, "-"])
+                                        : event.hall.map((h) => [h, "-"])
                                     ).map(([name, count]: any, idx: number) => (
                                         <div key={idx} className="grid grid-cols-2 py-4 px-8 hover:bg-white/5 transition-colors">
                                             <span className="font-medium text-left">{name}</span>
@@ -235,68 +206,29 @@ export default async function MenuPage() {
                 </MenuCountdown>
             </div>
 
-
-            {/* User Access Info (Debug/Verification) */}
-            {
-                session?.user && (
-                    <div className="max-w-3xl mx-auto mt-8 p-4 text-center">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest mb-3">Your Access Permissions</p>
-                        <div className="flex flex-wrap justify-center gap-2">
-                            {role === "ADMIN" ? (
-                                <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full shadow-sm">
-                                    Administrator (Global Access)
+            {session?.user && (
+                <div className="max-w-3xl mx-auto mt-8 p-4 text-center">
+                    <p className="text-[10px] text-neutral-400 uppercase tracking-widest mb-3">Your Access Permissions</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {role === "ADMIN" ? (
+                            <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full shadow-sm">
+                                Administrator (Global Access)
+                            </span>
+                        ) : userModules && userModules.length > 0 ? (
+                            userModules.map((m) => (
+                                <span key={m.moduleId} className="px-2 py-1 bg-neutral-100 text-neutral-600 border border-neutral-200 text-xs font-medium rounded flex items-center gap-1">
+                                    {m.module.name}
+                                    {event?.hall && event.hall.some((h) => getHallModuleId(h) === m.moduleId) && (
+                                        <CheckCircle className="w-3 h-3 text-emerald-500" />
+                                    )}
                                 </span>
-                            ) : (
-                                <div className="flex flex-col items-center gap-4">
-                                    {/* List all assigned modules */}
-                                    <div className="flex flex-wrap justify-center gap-2">
-                                        {userModules && userModules.length > 0 ? (
-                                            userModules.map((m) => (
-                                                <span key={m.moduleId} className="px-2 py-1 bg-neutral-100 text-neutral-600 border border-neutral-200 text-xs font-medium rounded flex items-center gap-1">
-                                                    {m.module.name}
-                                                    {event?.hall && event.hall.some(h => getHallModuleId(h) === m.moduleId) && (
-                                                        <CheckCircle className="w-3 h-3 text-emerald-500" />
-                                                    )}
-                                                </span>
-                                            ))
-                                        ) : (
-                                            <span className="text-neutral-400 text-xs italic">No permissions assigned</span>
-                                        )}
-                                    </div>
-
-                                    {/* Debug Data */}
-                                    <div className="w-full max-w-lg mt-4 text-left bg-neutral-50 p-3 rounded border border-neutral-100">
-                                        <p className="text-[10px] font-bold text-neutral-500 mb-1">Debug Diagnosis:</p>
-                                        <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-neutral-600">
-                                            <div>
-                                                <span className="block font-bold">Event Halls Needed:</span>
-                                                <ul className="list-disc pl-3">
-                                                    {event?.hall?.map(h => (
-                                                        <li key={h}>
-                                                            "{h}" <br />
-                                                            <span className="text-neutral-400">ID: {getHallModuleId(h)}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                            <div>
-                                                <span className="block font-bold">Your Module IDs:</span>
-                                                <ul className="list-disc pl-3">
-                                                    {userModules?.map(m => (
-                                                        <li key={m.moduleId} className={event?.hall?.some(h => getHallModuleId(h) === m.moduleId) ? "text-emerald-600 font-bold" : ""}>
-                                                            {m.moduleId}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                            ))
+                        ) : (
+                            <span className="text-neutral-400 text-xs italic">No permissions assigned</span>
+                        )}
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 }

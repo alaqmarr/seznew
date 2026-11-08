@@ -1,34 +1,9 @@
-import { prisma } from "@/lib/db";
+import { fetchBridgeMenu } from "@/lib/jamatevents-api";
 import { MenuModal } from "./MenuModal";
-import { getTodayRangeIST } from "@/lib/utils";
 
 export async function MenuAlert() {
-    const { start: startOfDay, end: endOfDay } = getTodayRangeIST();
-
     try {
-        const todaysEvent = await prisma.event.findFirst({
-            where: {
-                eventType: 'PUBLIC',
-                status: { not: 'CANCELLED' },
-                occasionDate: {
-                    gte: startOfDay,
-                    lt: endOfDay
-                },
-                menu: { not: null } // Only show if there IS a menu
-            },
-            select: {
-                id: true,
-                name: true,
-                occasionDay: true,
-                description: true,
-                menu: true,
-                occasionTime: true,
-                occasionDate: true,
-                thaalCount: true,
-                hall: true,
-                hallCounts: true
-            }
-        });
+        const todaysEvent = await fetchBridgeMenu("today");
 
         if (!todaysEvent) return null;
 
@@ -44,7 +19,7 @@ export async function MenuAlert() {
             />
         );
     } catch (error) {
-        console.error("Failed to fetch today's menu:", error);
+        console.error("Failed to fetch today's menu from jamatevents:", error);
         return null;
     }
 }

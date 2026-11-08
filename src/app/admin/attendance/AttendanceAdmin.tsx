@@ -7,8 +7,30 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
 import { addHours, format, isSameDay } from "date-fns";
-import { Calendar, Clock, Play, StopCircle, CheckCircle2, AlertCircle, Hourglass, Trash2 } from "lucide-react";
+import { Calendar, Clock, Play, StopCircle, Hourglass } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+function parseOccasionTime(timeStr?: string | null): { h: number; m: number } {
+    if (!timeStr) return { h: 19, m: 30 };
+    const trimmed = timeStr.trim();
+    const ampm = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (ampm) {
+        let h = parseInt(ampm[1], 10);
+        const m = parseInt(ampm[2], 10);
+        const period = ampm[3].toUpperCase();
+        if (period === "PM" && h !== 12) h += 12;
+        if (period === "AM" && h === 12) h = 0;
+        return { h, m };
+    }
+    const twentyFour = trimmed.match(/^(\d{1,2}):(\d{2})/);
+    if (twentyFour) {
+        return {
+            h: parseInt(twentyFour[1], 10) || 0,
+            m: parseInt(twentyFour[2], 10) || 0,
+        };
+    }
+    return { h: 19, m: 30 };
+}
 
 export function AttendanceAdmin({ activeSessions, events }: { activeSessions: any[], events: any[] }) {
     const [processingId, setProcessingId] = useState<string | null>(null);
@@ -17,10 +39,9 @@ export function AttendanceAdmin({ activeSessions, events }: { activeSessions: an
         if (processingId) return;
         setProcessingId(event.id);
 
-        let start = new Date(event.occasionDate);
-        // Parse time if present (string "HH:mm")
+        const start = new Date(event.occasionDate);
         if (event.occasionTime) {
-            const [h, m] = event.occasionTime.split(':').map(Number);
+            const { h, m } = parseOccasionTime(event.occasionTime);
             start.setHours(h, m, 0, 0);
         }
 
@@ -30,7 +51,6 @@ export function AttendanceAdmin({ activeSessions, events }: { activeSessions: an
         const res = await createAttendanceSession(event.id, start, end);
         if (res.success) {
             toast.success(`Session started for ${event.name}`);
-            // Optimistic update or reload could happen here, simpler to reload for now
             window.location.reload();
         } else {
             toast.error(res.error || "Failed to start session");
@@ -111,12 +131,12 @@ export function AttendanceAdmin({ activeSessions, events }: { activeSessions: an
                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
                                                         <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-100">
                                                             <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                            <span>{format(new Date(session.startTime), 'MMM d, yyyy')}</span>
+                                                            <span>{format(new Date(session.startTime), "MMM d, yyyy")}</span>
                                                         </div>
                                                         <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-100">
                                                             <Clock className="w-3.5 h-3.5 text-gray-400" />
                                                             <span className="font-mono text-xs">
-                                                                {format(new Date(session.startTime), 'h:mm a')} - {format(new Date(session.endTime), 'h:mm a')}
+                                                                {format(new Date(session.startTime), "h:mm a")} - {format(new Date(session.endTime), "h:mm a")}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -177,7 +197,7 @@ export function AttendanceAdmin({ activeSessions, events }: { activeSessions: an
                                                     ? "bg-blue-50 text-blue-700 border-blue-100"
                                                     : "bg-gray-50 text-gray-500 border-gray-100"
                                             )}>
-                                                {isSameDay(new Date(event.occasionDate), new Date()) ? "Today" : format(new Date(event.occasionDate), 'MMM d')}
+                                                {isSameDay(new Date(event.occasionDate), new Date()) ? "Today" : format(new Date(event.occasionDate), "MMM d")}
                                             </Badge>
 
                                             {event.occasionTime && (
