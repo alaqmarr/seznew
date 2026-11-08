@@ -12,54 +12,43 @@ interface MenuCountdownProps {
     children: React.ReactNode;
 }
 
-// Parse time string "7:30 PM" to hours and minutes
+// Parse time string ("7:30 PM" or "19:30") to hours and minutes
 function parseTimeString(timeStr: string): { hours: number; minutes: number } | null {
-    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (!match) return null;
-
-    let hours = parseInt(match[1]);
-    const minutes = parseInt(match[2]);
-    const isPM = match[3].toUpperCase() === 'PM';
-
-    if (isPM && hours !== 12) hours += 12;
-    if (!isPM && hours === 12) hours = 0;
-
-    return { hours, minutes };
+    if (!timeStr) return null;
+    const ampmMatch = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (ampmMatch) {
+        let hours = parseInt(ampmMatch[1], 10);
+        const minutes = parseInt(ampmMatch[2], 10);
+        const isPM = ampmMatch[3].toUpperCase() === "PM";
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+        return { hours, minutes };
+    }
+    const twentyFourMatch = timeStr.trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (twentyFourMatch) {
+        return {
+            hours: parseInt(twentyFourMatch[1], 10),
+            minutes: parseInt(twentyFourMatch[2], 10),
+        };
+    }
+    return null;
 }
 
-/**
- * Build the event's exact UTC timestamp from:
- *  - occasionDate: ISO string (e.g. "2025-02-20T00:00:00.000Z") — date portion only matters
- *  - occasionTime: "7:30 PM" style string — interpreted as IST (UTC+5:30)
- */
 function buildEventDateIST(occasionDate: string, occasionTime: string): Date | null {
     const parsed = parseTimeString(occasionTime);
     if (!parsed) return null;
 
-    // Extract the calendar date in IST by interpreting the ISO string date portion
-    // occasionDate is typically stored as UTC midnight of the IST date, e.g.
-    // "2025-02-20T00:00:00.000Z" means Feb 20 in IST (since IST = UTC+5:30, 
-    // UTC midnight is already 5:30 AM IST of the same date).
-    // We need the IST year/month/day, then combine with the time.
-
-    // Get the date portion in IST
     const dateObj = new Date(occasionDate);
-    
-    // Format the date in IST to extract year, month, day
-    const istFormatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Kolkata',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+    const istFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
     });
-    const istDateStr = istFormatter.format(dateObj); // "YYYY-MM-DD"
-    const [year, month, day] = istDateStr.split('-').map(Number);
+    const istDateStr = istFormatter.format(dateObj);
+    const [year, month, day] = istDateStr.split("-").map(Number);
 
-    // Now build the event time as UTC by subtracting IST offset (5h30m)
-    // IST = UTC + 5:30, so UTC = IST - 5:30
     const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
-
-    // Event time in IST as a UTC timestamp
     const eventUTC = Date.UTC(year, month - 1, day, parsed.hours, parsed.minutes, 0, 0) - IST_OFFSET_MS;
 
     return new Date(eventUTC);
@@ -78,29 +67,22 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
         const eventDate = buildEventDateIST(occasionDate, occasionTime);
 
         if (!eventDate) {
-            // If we can't parse the time, just show the menu
             setShowMenu(true);
             return;
         }
 
         const checkVisibility = () => {
             const now = new Date();
-
-            // Menu visible time = 30 min before event
             const menuVisibleTime = new Date(eventDate.getTime() - 30 * 60 * 1000);
-
-            // Countdown Start Time = 24 hours before event
             const countdownStartTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
             const timeToReveal = menuVisibleTime.getTime() - now.getTime();
             const timeToCountdownStart = countdownStartTime.getTime() - now.getTime();
 
             if (timeToReveal <= 0) {
-                // Menu should be visible
                 setShowMenu(true);
                 setCountdown(null);
             } else if (timeToCountdownStart <= 0) {
-                // Within 24h window — show countdown
                 setShowMenu(false);
                 const totalSeconds = Math.floor(timeToReveal / 1000);
                 const h = Math.floor(totalSeconds / 3600);
@@ -108,7 +90,6 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
                 const s = totalSeconds % 60;
                 setCountdown({ hours: h, minutes: m, seconds: s });
             } else {
-                // More than 24h away — hide countdown
                 setShowMenu(false);
                 setCountdown(null);
             }
@@ -119,7 +100,6 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
         return () => clearInterval(interval);
     }, [occasionTime, occasionDate]);
 
-    // Poll for server updates every minute
     const router = useRouter();
     useEffect(() => {
         const interval = setInterval(() => {
@@ -128,12 +108,11 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
         return () => clearInterval(interval);
     }, [router]);
 
-    // Format Date for display in IST
-    const formattedDate = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Kolkata',
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
+    const formattedDate = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Kolkata",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
     }).format(new Date(occasionDate));
 
     if (!mounted) return null;
@@ -143,20 +122,14 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
     return (
         <OrnateCard className="overflow-hidden border-gold/30 shadow-2xl relative">
             <div className="bg-primary-dark p-6 md:p-12 text-center relative z-10 min-h-[60vh] md:min-h-[500px] flex flex-col items-center justify-center">
-                {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none" />
-
-                {/* Dashed Border Decoration */}
                 <div className="absolute inset-4 md:inset-6 border-2 border-dashed border-gold/20 rounded-xl pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col items-center gap-6 md:gap-8 w-full max-w-2xl">
-
-                    {/* Icon */}
                     <div className="bg-gold/10 p-5 rounded-full ring-1 ring-gold/30 mb-2">
                         <Utensils className="w-12 h-12 text-gold" />
                     </div>
 
-                    {/* Date & Title */}
                     <div className="space-y-4">
                         <h2 className="text-xl md:text-2xl text-gold/80 font-serif tracking-wide">
                             {formattedDate}
@@ -166,18 +139,14 @@ export function MenuCountdown({ occasionDate, occasionTime, eventTitle, children
                         </h1>
                     </div>
 
-                    {/* Countdown Section or Available Soon Message */}
                     {countdown ? (
                         <div className="mt-8 flex flex-col items-center gap-6 w-full animate-in fade-in slide-in-from-bottom-5 duration-700">
-
-                            {/* Stylish Badge */}
                             <div className="border border-dashed border-gold/40 px-8 py-2 rounded-full bg-gold/5 backdrop-blur-sm">
                                 <span className="text-gold text-xs font-bold uppercase tracking-[0.2em]">
                                     Menu Available In
                                 </span>
                             </div>
 
-                            {/* Timer Grid */}
                             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full max-w-md">
                                 <TimeBox value={countdown.hours} label="Hours" />
                                 <TimeBox value={countdown.minutes} label="Minutes" />
@@ -212,10 +181,8 @@ function TimeBox({ value, label }: { value: number; label: string }) {
         <div className="flex flex-col items-center gap-2 group">
             <div className="relative bg-black/40 border border-gold/20 rounded-xl w-full aspect-square flex items-center justify-center shadow-lg group-hover:border-gold/40 transition-colors">
                 <span className="text-4xl md:text-6xl font-bold text-gold font-mono tabular-nums">
-                    {value.toString().padStart(2, '0')}
+                    {value.toString().padStart(2, "0")}
                 </span>
-
-                {/* Corner Accents */}
                 <div className="absolute top-2 left-2 w-2 h-2 border-t border-l border-gold/30 rounded-tl-sm" />
                 <div className="absolute bottom-2 right-2 w-2 h-2 border-b border-r border-gold/30 rounded-br-sm" />
             </div>

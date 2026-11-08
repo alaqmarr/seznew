@@ -1,11 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { fetchBridgeHalls } from "@/lib/jamatevents-api";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 import { slugify, getHallModuleId } from "@/lib/utils";
+import { hasModuleAccess } from "@/lib/access-control";
 
 // ============ Module Actions ============
 
@@ -27,7 +29,11 @@ export async function createModule(data: {
     return { success: false, error: "Unauthorized" };
   }
 
-  const moduleId = slugify(data.name);
+  const trimmedName = data.name.trim();
+  const moduleId =
+    trimmedName.toLowerCase() === "event_charges"
+      ? "event_charges"
+      : slugify(trimmedName);
 
   try {
     const module = await prisma.$transaction(async (tx) => {
@@ -48,7 +54,6 @@ export async function createModule(data: {
         include: { links: true },
       });
 
-      // Handle User Assignment if ITS provided
       if (data.targetUserIts && data.targetUserIts.length > 0) {
         const users = await tx.user.findMany({
           where: { its: { in: data.targetUserIts } },
@@ -110,7 +115,6 @@ export async function updateModule(
   }
 
   try {
-    // If links are provided, delete existing and recreate
     if (data.links) {
       await prisma.moduleLink.deleteMany({ where: { moduleId: id } });
       await prisma.moduleLink.createMany({
@@ -123,7 +127,6 @@ export async function updateModule(
       });
     }
 
-    // Update module fields
     await prisma.module.update({
       where: { id },
       data: {
@@ -255,12 +258,10 @@ export async function updateUserModules(userId: string, moduleIds: string[]) {
   }
 
   try {
-    // Delete all existing access
     await prisma.userModuleAccess.deleteMany({
       where: { userId },
     });
 
-    // Create new access records
     if (moduleIds.length > 0) {
       await prisma.userModuleAccess.createMany({
         data: moduleIds.map((moduleId) => ({ userId, moduleId })),
@@ -276,7 +277,7 @@ export async function updateUserModules(userId: string, moduleIds: string[]) {
   }
 }
 
-// ============ Hall Module Generator ============
+// ============ Hall Module Generator (Fetched from jamatevents) ============
 
 export async function getHallModuleStatus() {
   const session = await getServerSession(authOptions);
@@ -284,19 +285,25 @@ export async function getHallModuleStatus() {
     return [];
   }
 
-  const halls = await prisma.hall.findMany({
-    orderBy: { name: "asc" },
-    select: { name: true },
+  const halls = await fetchBridgeHalls().catch((err) => {
+    console.error("Failed to fetch halls from jamatevents:", err);
+    return [];
   });
 
-  const modules = await prisma.module.findMany({
-    where: { id: { startsWith: "hall-" } },
-    select: { id: true, name: true },
-  });
+  const [modules, chargesMod] = await Promise.all([
+    prisma.module.findMany({
+      where: { id: { startsWith: "hall-" } },
+      select: { id: true, name: true },
+    }),
+    prisma.module.findUnique({
+      where: { id: "event_charges" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   const existingModuleIds = new Set(modules.map((m) => m.id));
 
-  return halls.map((h) => {
+  const hallEntries = halls.map((h) => {
     const moduleId = getHallModuleId(h.name);
     const exists = existingModuleIds.has(moduleId);
     return {
@@ -308,6 +315,16 @@ export async function getHallModuleStatus() {
         : null,
     };
   });
+
+  return [
+    {
+      hallName: "Event Charges (OTP Access on Events Portal)",
+      moduleId: "event_charges",
+      exists: Boolean(chargesMod),
+      existingName: chargesMod?.name || null,
+    },
+    ...hallEntries,
+  ];
 }
 
 export async function createHallModule(hallName: string) {
@@ -316,10 +333,12 @@ export async function createHallModule(hallName: string) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const moduleId = getHallModuleId(hallName);
+  const isEventCharges =
+    hallName === "event_charges" ||
+    hallName.startsWith("Event Charges");
+  const moduleId = isEventCharges ? "event_charges" : getHallModuleId(hallName);
 
   try {
-    // Check if exists
     const exists = await prisma.module.findUnique({ where: { id: moduleId } });
     if (exists) {
       return { success: false, error: "Module already exists" };
@@ -328,17 +347,12 @@ export async function createHallModule(hallName: string) {
     await prisma.module.create({
       data: {
         id: moduleId,
-        name: `Manage ${hallName}`, // e.g. "Manage 1st Floor"
-        description: `Access to update thaal counts for ${hallName}`,
-        icon: "Utensils", // Default icon
+        name: isEventCharges ? "Event Charges" : `Manage ${hallName}`,
+        description: isEventCharges
+          ? "Allow viewing, editing, and printing booking rupee charges via 6-digit email OTP on Jamaat Events"
+          : `Access to update thaal counts for ${hallName}`,
+        icon: isEventCharges ? "IndianRupee" : "Utensils",
         links: {
-          // No specific link for this module, it's a permission module?
-          // Ore maybe it links to /menu?
-          // Usually these are just permission flags.
-          // But our schema requires links?
-          // Let's check schema. Link is optional relation?
-          // links ModuleLink[]
-          // It's a relation, so it can be empty.
           create: [],
         },
       },
@@ -372,8 +386,6 @@ export async function getModuleUsers(moduleId: string) {
   }
 }
 
-import { hasModuleAccess } from "@/lib/access-control";
-
 export async function searchUsers(query: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return { success: false, error: "Unauthorized" };
@@ -383,7 +395,6 @@ export async function searchUsers(query: string) {
 
   let isAuthorized = role === "ADMIN";
   if (!isAuthorized) {
-    // Allow if user has access to floor management
     isAuthorized = await hasModuleAccess(userId, "/admin/floors");
   }
 

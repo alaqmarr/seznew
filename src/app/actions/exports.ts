@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { fetchBridgeEvents } from "@/lib/jamatevents-api";
 import { requireAccess } from "@/lib/access-control";
 
 export async function getExportData(type: string) {
@@ -35,7 +36,6 @@ export async function getExportData(type: string) {
             },
           },
         });
-        // Flatten feeConfig and calculate age
         data = data.map((u) => {
           const age = u.dob
             ? Math.floor(
@@ -53,7 +53,6 @@ export async function getExportData(type: string) {
         break;
 
       case "ACCOUNTS":
-        // Ledger / Transactions
         data = await prisma.feeTransaction.findMany({
           orderBy: { date: "desc" },
           include: {
@@ -74,26 +73,30 @@ export async function getExportData(type: string) {
         }));
         break;
 
-      case "EVENTS":
-        // Master Events List with Attendance Summary
-        data = await prisma.event.findMany({
-          orderBy: { occasionDate: "desc" },
-          include: {
-            _count: {
-              select: { attendanceRecords: true },
-            },
-          },
-        });
-        data = data.map((e) => ({
+      case "EVENTS": {
+        const [bridgeEvents, attendanceCounts] = await Promise.all([
+          fetchBridgeEvents({ order: "desc" }),
+          prisma.attendanceRecord.groupBy({
+            by: ["eventId"],
+            _count: { userId: true },
+          }),
+        ]);
+        const countMap = new Map(
+          attendanceCounts.map((c) => [c.eventId, c._count.userId]),
+        );
+        data = bridgeEvents.map((e) => ({
           Name: e.name,
+          Occasion: e.description,
           Date: e.occasionDate,
+          Time: e.occasionTime,
           Type: e.eventType,
           "Hall(s)": e.hall.join(", "),
-          "Total Guests": e.thaalCount * 8, // Estimate or just use other fields
-          "Attendees Marked": e._count.attendanceRecords,
+          "Total Guests": e.thaalCount * 8,
+          "Attendees Marked": countMap.get(e.id) || 0,
           Status: e.status,
         }));
         break;
+      }
 
       case "CONTRIBUTIONS":
         data = await prisma.eventContribution.findMany({
@@ -113,9 +116,7 @@ export async function getExportData(type: string) {
         }));
         break;
 
-      case "PENDING_FEES":
-      case "PENDING_FEES":
-        // 1. Get all unique billing months globally to align columns
+      case "PENDING_FEES": {
         const distinctMonths = await prisma.feeRecord.groupBy({
           by: ["month", "year"],
           orderBy: [{ year: "asc" }, { month: "asc" }],
@@ -130,7 +131,6 @@ export async function getExportData(type: string) {
 
         headers = ["User Name", "ITS", "Total Due", ...dynamicHeaders];
 
-        // 2. Get All Users with their records
         const allUsers = await prisma.user.findMany({
           orderBy: { name: "asc" },
           select: {
@@ -141,7 +141,6 @@ export async function getExportData(type: string) {
           },
         });
 
-        // 3. Map Data
         data = allUsers.map((user) => {
           const row: any = {
             "User Name": user.name || user.username || "Unknown",
@@ -151,7 +150,6 @@ export async function getExportData(type: string) {
 
           let totalUserDue = 0;
 
-          // Pre-process user records for easier lookup
           const userRecordMap = new Map();
           user.feeRecords.forEach((r) => {
             const key = new Date(r.year, r.month).toLocaleString("default", {
@@ -161,7 +159,6 @@ export async function getExportData(type: string) {
             userRecordMap.set(key, r);
           });
 
-          // Fill columns
           dynamicHeaders.forEach((header) => {
             const record = userRecordMap.get(header);
             if (record) {
@@ -169,7 +166,7 @@ export async function getExportData(type: string) {
               row[header] = due;
               totalUserDue += due;
             } else {
-              row[header] = 0; // No record implies 0 due
+              row[header] = 0;
             }
           });
 
@@ -177,6 +174,7 @@ export async function getExportData(type: string) {
           return row;
         });
         break;
+      }
 
       case "PAID_HISTORY":
         data = await prisma.feeRecord.findMany({
